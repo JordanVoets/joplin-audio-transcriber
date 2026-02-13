@@ -1,0 +1,16 @@
+{
+	"manifest_version": 1,
+	"id": "com.jordanvoets.transcriber",
+	"app_min_version": "3.5",
+	"version": "1.0.0",
+	"name": "Joplin Audio Transcriber",
+	"description": "Transcribes attached audio files and appends text to the note.",
+	"author": "Jordan Voets",
+	"homepage_url": "https://github.com/JordanVoets/joplin-audio-transcriber",
+	"repository_url": "https://github.com/JordanVoets/joplin-audio-transcriber",
+	"keywords": [],
+	"categories": [],
+	"screenshots": [],
+	"icons": {},
+	"promo_tile": {}
+}

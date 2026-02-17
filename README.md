@@ -54,3 +54,11 @@ After installation, configure the plugin in Joplin settings:
 2. Click **Get API Key** and create a new API key
 3. Copy and paste it into the Joplin settings
 
+## Usage
+
+1. Attach an audio file to a Joplin note
+2. Select the audio file link in your note (highlight the entire link e.g. `[filename](:/resourceId)`)
+3. Press the **Transcribe Selected Audio** button in the toolbar, or use the command palette (Ctrl/Cmd+Shift+P) and search for "Transcribe Selected Audio"
+4. Wait for the transcription to complete
+5. The transcribed text will be appended to your note
+

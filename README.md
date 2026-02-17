@@ -90,3 +90,24 @@ src/
 ### Adding a New Transcription Service
 
 See the [Adding New Services](./wiki/Adding-New-Services.md) guide in the project wiki for detailed instructions on extending the plugin with new transcription providers.
+
+## Troubleshooting
+
+**"Please select a valid audio file"**
+- Make sure you've attached an audio file to the note
+- Select the file link (the `[filename](:/resourceId)` markdown link)
+- Audio formats supported: MP3, WAV, OGG, FLAC, AAC
+
+**"API error"**
+- Verify your API key is correct and has sufficient credits
+- Check if your API key is still valid (not expired)
+- Ensure your network connection is stable
+
+**"No transcription result"**
+- Try with a different audio file
+- Check the Joplin console (Help > Toggle Console) for error messages
+- Verify the audio file quality and duration
+
+> [!NOTE]
+> For further assistance, please open a new issue on the [GitHub repository](https://github.com/JordanVoets/joplin-audio-transcriber/issues).
+

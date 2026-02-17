@@ -28,3 +28,29 @@ A Joplin plugin that transcribes audio files attached to your notes using AI-pow
 4. The built plugin will be in the `publish/` directory
 5. Install the `.jpl` file in Joplin via **Tools > Options > Plugins > Gear icon (top left next to Manage your plugins) > Install from file**
 
+## Configuration
+
+After installation, configure the plugin in Joplin settings:
+
+1. Open **Tools > Options > Preferences**
+2. Go to the **Audio Transcriber** section
+3. Configure the following:
+   - **Transcription Provider**: Choose between OpenAI or Google Gemini
+   - **API Key**: Enter your API key (stored securely)
+   - **Model** *(optional)*: Specify a model (e.g., `whisper-1` for OpenAI, `gemini-1.5-flash` for Gemini)
+   - **Language** *(optional)*: Set language code for transcription (e.g., `en`, `es`, `fr`)
+   - **Custom Prompt** *(optional)*: Add custom instructions for the transcription
+
+### Obtaining API Keys
+
+**OpenAI:**
+1. Visit [OpenAI API Platform](https://platform.openai.com)
+2. Create an account and go to **API keys**
+3. Generate a new API key
+4. Copy and paste it into the Joplin settings
+
+**Google Gemini:**
+1. Visit [Google AI Studio](https://aistudio.google.com)
+2. Click **Get API Key** and create a new API key
+3. Copy and paste it into the Joplin settings
+

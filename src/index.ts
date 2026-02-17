@@ -1,9 +1,69 @@
 import joplin from 'api';
-import { ToolbarButtonLocation } from 'api/types';
+import { ToolbarButtonLocation, SettingItemType } from 'api/types';
+import { TranscriptionServiceFactory, TranscriptionProvider } from './services/TranscriptionServiceFactory';
+import { TranscriptionServiceConfig } from './services/ITranscriptionService';
 
 joplin.plugins.register({
 	onStart: async function () {
 		console.info('Joplin Audio Transcriber plugin started!');
+
+		// Register settings
+		await joplin.settings.registerSection('audioTranscriberSettings', {
+			label: 'Audio Transcriber',
+			iconName: 'fas fa-closed-captioning',
+		});
+
+		await joplin.settings.registerSettings({
+			'provider': {
+				value: TranscriptionProvider.OpenAI,
+				type: SettingItemType.String,
+				section: 'audioTranscriberSettings',
+				public: true,
+				isEnum: true,
+				options: {
+					[TranscriptionProvider.OpenAI]: 'OpenAI Whisper',
+					[TranscriptionProvider.Gemini]: 'Google Gemini',
+				},
+				label: 'Transcription Provider',
+				description: 'Select the AI service to use for transcription',
+			},
+			'apiKey': {
+				value: '',
+				type: SettingItemType.String,
+				section: 'audioTranscriberSettings',
+				public: true,
+				secure: true,
+				label: 'API Key',
+				description: 'API key for the selected provider',
+			},
+			'model': {
+				value: '',
+				type: SettingItemType.String,
+				section: 'audioTranscriberSettings',
+				public: true,
+				advanced: true,
+				label: 'Model (Optional)',
+				description: 'Model to use (e.g., whisper-1 for OpenAI, gemini-1.5-flash for Gemini). Leave empty for default.',
+			},
+			'language': {
+				value: '',
+				type: SettingItemType.String,
+				section: 'audioTranscriberSettings',
+				public: true,
+				advanced: true,
+				label: 'Language (Optional)',
+				description: 'Language code (e.g., en, es, fr). Leave empty for auto-detection.',
+			},
+			'customPrompt': {
+				value: '',
+				type: SettingItemType.String,
+				section: 'audioTranscriberSettings',
+				public: true,
+				advanced: true,
+				label: 'Custom Prompt (Optional)',
+				description: 'Custom instruction for transcription. Leave empty for default.',
+			},
+		});
 
 		await joplin.commands.register({
 			name: 'transcribeSelectedAudio',
@@ -33,14 +93,56 @@ joplin.plugins.register({
 					alert('Please select a valid audio file (e.g., .mp3, .wav, .ogg, .flac, .aac).');
 					return;
 				}
+
+				// Get settings
+				const provider = await joplin.settings.value('provider') as TranscriptionProvider;
+				const apiKey = await joplin.settings.value('apiKey') as string;
+				const model = await joplin.settings.value('model') as string;
+				const language = await joplin.settings.value('language') as string;
+				const customPrompt = await joplin.settings.value('customPrompt') as string;
+
+				if (!apiKey) {
+					alert('Please configure your API key in Settings > Audio Transcriber.');
+					return;
+				}
 				
 				// ToDo: Replace with some kinda progress indicator UI
 				alert(`Transcribing audio: ${file.title} (ID: ${file.id})`);
 				
-				// ToDo: Add transcription logic here, e.g., sending the selected audio file to a transcription service.
-				const result = `Transcription result for audio file "${file.title}" goes here.`;
-				
-				await joplin.commands.execute('insertText', `${selectedText}\n\n${result}`);
+				try {
+					// Get the audio file data
+					const fileData = await joplin.data.get(['resources', fileId, 'file']);
+
+
+					const body = fileData.body;
+					const buffer = Buffer.from(body);
+					
+					// Convert the file data to a Blob
+					const blob = new Blob([buffer], { type: file.mime });
+					
+					// Create configuration for the service
+					const config: TranscriptionServiceConfig = {
+						apiKey,
+						model: model || undefined,
+						language: language || undefined,
+						customPrompt: customPrompt || undefined,
+					};
+					
+					// Create the appropriate transcription service using the factory
+					const transcriptionService = TranscriptionServiceFactory.create(provider, config);
+					
+					// Use the service to transcribe (dependency on interface, not implementation)
+
+					const transcription = await transcriptionService.transcribe(blob, file.title, file.mime);
+					
+					const result = `**Transcription:**\n\n${transcription}`;
+					
+					await joplin.commands.execute('insertText', `${selectedText}\n\n${result}`);
+					
+				} catch (error) {
+					console.error('Transcription error:', error);
+					alert(`Transcription failed: ${error.message}`);
+				}
 			},
 		});
 

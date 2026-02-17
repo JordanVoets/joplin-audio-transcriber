@@ -115,3 +115,6 @@ See the [Adding New Services](./wiki/Adding-New-Services.md) guide in the projec
 
 MIT © Jordan Voets
 
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests on the [GitHub repository](https://github.com/JordanVoets/joplin-audio-transcriber).

@@ -62,3 +62,31 @@ After installation, configure the plugin in Joplin settings:
 4. Wait for the transcription to complete
 5. The transcribed text will be appended to your note
 
+## Development
+
+### Prerequisites
+- Node.js and npm
+- TypeScript knowledge (the plugin is written in TypeScript)
+
+### Building
+```bash
+npm install
+npm run dist
+```
+
+### Project Structure
+```
+src/
+├── index.ts                           # Plugin entry point
+├── manifest.json                      # Plugin metadata
+└── services/
+    ├── ITranscriptionService.ts       # Service interface
+    ├── TranscriptionServiceFactory.ts # Factory for creating services
+    ├── ServiceRegistry.ts             # Registry of available services
+    ├── OpenAITranscriptionService.ts  # OpenAI implementation
+    └── GeminiTranscriptionService.ts  # Google Gemini implementation
+```
+
+### Adding a New Transcription Service
+
+See the [Adding New Services](./wiki/Adding-New-Services.md) guide in the project wiki for detailed instructions on extending the plugin with new transcription providers.

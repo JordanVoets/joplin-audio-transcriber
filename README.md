@@ -1,5 +1,4 @@
-# Joplin Plugin
+# Joplin Audio Transcriber
 
-This is your new Joplin plugin. It is suggested that you use this README file to document your plugin.
+A Joplin plugin that transcribes audio files attached to your notes using AI-powered transcription services.
 
-For information on how to build or publish the plugin, please see [GENERATOR_DOC.md](./GENERATOR_DOC.md)

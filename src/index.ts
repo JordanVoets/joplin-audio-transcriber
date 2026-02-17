@@ -1,6 +1,6 @@
 import joplin from 'api';
 import { ToolbarButtonLocation, SettingItemType } from 'api/types';
-import { TranscriptionServiceFactory, TranscriptionProvider } from './services/TranscriptionServiceFactory';
+import { TranscriptionServiceFactory } from './services/TranscriptionServiceFactory';
 import { TranscriptionServiceConfig } from './services/ITranscriptionService';
 
 joplin.plugins.register({
@@ -15,15 +15,12 @@ joplin.plugins.register({
 
 		await joplin.settings.registerSettings({
 			'provider': {
-				value: TranscriptionProvider.OpenAI,
+				value: 'openai',
 				type: SettingItemType.String,
 				section: 'audioTranscriberSettings',
 				public: true,
 				isEnum: true,
-				options: {
-					[TranscriptionProvider.OpenAI]: 'OpenAI Whisper',
-					[TranscriptionProvider.Gemini]: 'Google Gemini',
-				},
+				options: TranscriptionServiceFactory.getProviderOptions(),
 				label: 'Transcription Provider',
 				description: 'Select the AI service to use for transcription',
 			},
@@ -95,7 +92,7 @@ joplin.plugins.register({
 				}
 
 				// Get settings
-				const provider = await joplin.settings.value('provider') as TranscriptionProvider;
+				const provider = await joplin.settings.value('provider') as string;
 				const apiKey = await joplin.settings.value('apiKey') as string;
 				const model = await joplin.settings.value('model') as string;
 				const language = await joplin.settings.value('language') as string;

@@ -97,7 +97,7 @@ The project uses Jest for unit and integration testing with full TypeScript supp
 **Run all tests:**
 
 ```bash
-jest test
+npm test
 ```
 
 **Run tests in watch mode** (useful during development):

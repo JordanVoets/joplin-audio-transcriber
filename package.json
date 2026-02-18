@@ -6,7 +6,9 @@
     "prepare": "npm run dist",
     "updateVersion": "webpack --env joplin-plugin-config=updateVersion",
     "update": "npm install -g generator-joplin && yo joplin --node-package-manager npm --update --force",
-    "lint": "eslint --fix && prettier --write ."
+    "lint": "eslint --fix && prettier --write .",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "license": "MIT",
   "keywords": [

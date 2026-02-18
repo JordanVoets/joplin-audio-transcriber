@@ -1,11 +1,11 @@
 /**
  * Main entry point for the HTTP connector/request pattern
- * 
+ *
  * This module provides a clean, object-oriented way to interact with external APIs.
  */
 
 // Core classes
-export { Connector, Request } from './Connector';
+export { Connector, Request } from "./Connector";
 
 // Types
 export {
@@ -17,7 +17,7 @@ export {
   ErrorHandler,
   HttpError,
   AuthHandler,
-} from './types';
+} from "./types";
 
 // Authentication handlers
 export {
@@ -26,7 +26,7 @@ export {
   BasicAuth,
   CustomHeaderAuth,
   QueryParamAuth,
-} from './auth';
+} from "./auth";
 
 // Middleware and interceptors
 export {
@@ -38,7 +38,7 @@ export {
   transformResponseInterceptor,
   errorLoggingHandler,
   retryErrorHandler,
-} from './middleware';
+} from "./middleware";
 
 // Response handlers
 export {
@@ -47,4 +47,4 @@ export {
   TextResponseHandler,
   BlobResponseHandler,
   ArrayResponseHandler,
-} from './ResponseHandler';
+} from "./ResponseHandler";

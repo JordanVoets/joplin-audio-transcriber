@@ -1,4 +1,10 @@
-import { RequestConfig, RequestMiddleware, ResponseInterceptor, ErrorHandler, Response } from './types';
+import {
+  RequestConfig,
+  RequestMiddleware,
+  ResponseInterceptor,
+  ErrorHandler,
+  Response,
+} from "./types";
 
 /**
  * Logging middleware - logs request details
@@ -7,7 +13,7 @@ export const loggingMiddleware = (): RequestMiddleware => {
   return (config: RequestConfig) => {
     console.log(`[HTTP] ${config.method} ${config.endpoint}`);
     if (config.query) {
-      console.log('[HTTP] Query:', config.query);
+      console.log("[HTTP] Query:", config.query);
     }
     return config;
   };
@@ -20,7 +26,9 @@ export const timeoutMiddleware = (timeoutMs: number): RequestMiddleware => {
   return (config: RequestConfig) => {
     // Note: This is a placeholder. Actual timeout implementation
     // would require AbortController integration in the Connector
-    console.warn(`[HTTP] Timeout middleware: ${timeoutMs}ms (not implemented in fetch)`);
+    console.warn(
+      `[HTTP] Timeout middleware: ${timeoutMs}ms (not implemented in fetch)`,
+    );
     return config;
   };
 };
@@ -105,10 +113,7 @@ export const retryErrorHandler = (
   let retryCount = 0;
 
   return (error) => {
-    if (
-      retryCount < maxRetries &&
-      retryableStatuses.includes(error.status)
-    ) {
+    if (retryCount < maxRetries && retryableStatuses.includes(error.status)) {
       retryCount++;
       console.log(`[HTTP] Retrying request (${retryCount}/${maxRetries})`);
       // Note: Actual retry logic would need to be implemented in the Connector

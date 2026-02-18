@@ -1,4 +1,4 @@
-import { Connector, BearerTokenAuth } from '../../index';
+import { Connector, BearerTokenAuth } from "../../index";
 
 /**
  * Connector for OpenAI API
@@ -10,6 +10,6 @@ export class OpenAIConnector extends Connector {
   }
 
   baseUrl(): string {
-    return 'https://api.openai.com/v1/';
+    return "https://api.openai.com/v1/";
   }
 }

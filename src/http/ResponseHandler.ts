@@ -1,4 +1,4 @@
-import { Response } from './types';
+import { Response } from "./types";
 
 /**
  * Base response handler for extracting and validating data
@@ -13,7 +13,7 @@ export abstract class ResponseHandler<TRaw, TProcessed> {
    * Validate the processed data
    * Override to add custom validation logic
    */
-  validate(data: TProcessed): boolean {
+  validate(_data: TProcessed): boolean {
     return true;
   }
 
@@ -24,7 +24,7 @@ export abstract class ResponseHandler<TRaw, TProcessed> {
     const processed = await this.process(response.data);
 
     if (!this.validate(processed)) {
-      throw new Error('Response validation failed');
+      throw new Error("Response validation failed");
     }
 
     return processed;

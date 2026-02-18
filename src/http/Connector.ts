@@ -7,7 +7,7 @@ import {
   HttpError,
   AuthHandler,
   HttpMethod,
-} from './types';
+} from "./types";
 
 /**
  * Abstract base class for API connectors.
@@ -30,7 +30,7 @@ export abstract class Connector {
    */
   protected defaultHeaders(): Record<string, string> {
     return {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
   }
 
@@ -69,7 +69,9 @@ export abstract class Connector {
   /**
    * Send a request through this connector
    */
-  async send<TResponse>(request: Request<TResponse>): Promise<Response<TResponse>> {
+  async send<TResponse>(
+    request: Request<TResponse>,
+  ): Promise<Response<TResponse>> {
     try {
       // Build the initial request config
       let config = await request.buildConfig();
@@ -138,9 +140,9 @@ export abstract class Connector {
       if (config.body instanceof FormData || config.body instanceof Blob) {
         options.body = config.body as BodyInit;
         // Remove Content-Type header for FormData - let browser set it with boundary
-        if (options.headers && typeof options.headers === 'object') {
+        if (options.headers && typeof options.headers === "object") {
           const headers = { ...options.headers };
-          delete headers['Content-Type'];
+          delete headers["Content-Type"];
           options.headers = headers;
         }
       } else {
@@ -152,12 +154,12 @@ export abstract class Connector {
     const fetchResponse = await fetch(url.toString(), options);
 
     // Parse response
-    const contentType = fetchResponse.headers.get('content-type') || '';
+    const contentType = fetchResponse.headers.get("content-type") || "";
     let data: TResponse;
 
-    if (contentType.includes('application/json')) {
+    if (contentType.includes("application/json")) {
       data = await fetchResponse.json();
-    } else if (contentType.includes('text/')) {
+    } else if (contentType.includes("text/")) {
       data = (await fetchResponse.text()) as TResponse;
     } else {
       data = (await fetchResponse.blob()) as TResponse;
@@ -244,7 +246,9 @@ export abstract class Request<TResponse = unknown> {
    * Handle the response and extract/transform the data
    * Override this to add custom validation or transformation
    */
-  async handleResponse(response: Response<TResponse>): Promise<Response<TResponse>> {
+  async handleResponse(
+    response: Response<TResponse>,
+  ): Promise<Response<TResponse>> {
     return response;
   }
 }

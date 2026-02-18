@@ -1,4 +1,4 @@
-import { Request, HttpMethod, Response } from '../../../index';
+import { Request, HttpMethod, Response } from "../../../index";
 
 /**
  * Response format from Gemini API's generateContent endpoint
@@ -85,11 +85,12 @@ export class GenerateContentRequest extends Request<string> {
   async handleResponse(response: Response<string>): Promise<Response<string>> {
     // The response.data is already parsed as JSON by the connector
     // We need to cast it to the actual API response type to extract the text
-    const apiResponse = response.data as unknown as GeminiGenerateContentResponse;
+    const apiResponse =
+      response.data as unknown as GeminiGenerateContentResponse;
     const text = apiResponse.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     if (!text) {
-      throw new Error('Invalid response format from Gemini API');
+      throw new Error("Invalid response format from Gemini API");
     }
 
     // Return a new response with just the transcription text

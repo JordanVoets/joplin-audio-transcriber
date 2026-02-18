@@ -1,4 +1,4 @@
-import { Request, HttpMethod, Response } from '../../../index';
+import { Request, HttpMethod, Response } from "../../../index";
 
 /**
  * Response from OpenAI Whisper API
@@ -37,7 +37,7 @@ export class TranscribeRequest extends Request<string> {
   }
 
   endpoint(): string {
-    return 'audio/transcriptions';
+    return "audio/transcriptions";
   }
 
   protected headers(): Record<string, string> {
@@ -48,15 +48,15 @@ export class TranscribeRequest extends Request<string> {
 
   body(): FormData {
     const formData = new FormData();
-    formData.append('file', this.audioData, this.fileName);
-    formData.append('model', this.model);
+    formData.append("file", this.audioData, this.fileName);
+    formData.append("model", this.model);
 
     if (this.language) {
-      formData.append('language', this.language);
+      formData.append("language", this.language);
     }
 
     if (this.customPrompt) {
-      formData.append('prompt', this.customPrompt);
+      formData.append("prompt", this.customPrompt);
     }
 
     return formData;
@@ -71,7 +71,9 @@ export class TranscribeRequest extends Request<string> {
     const text = apiResponse.text;
 
     if (!text) {
-      throw new Error('Invalid response format from OpenAI API - missing text field');
+      throw new Error(
+        "Invalid response format from OpenAI API - missing text field",
+      );
     }
 
     // Return response with the extracted text

@@ -1,4 +1,4 @@
-import { Connector, QueryParamAuth } from '../../index';
+import { Connector, QueryParamAuth } from "../../index";
 
 /**
  * Connector for Google Gemini API
@@ -6,16 +6,16 @@ import { Connector, QueryParamAuth } from '../../index';
 export class GeminiConnector extends Connector {
   constructor(apiKey: string) {
     super();
-    this.withAuth(new QueryParamAuth('key', apiKey));
+    this.withAuth(new QueryParamAuth("key", apiKey));
   }
 
   baseUrl(): string {
-    return 'https://generativelanguage.googleapis.com/v1beta/';
+    return "https://generativelanguage.googleapis.com/v1beta/";
   }
 
   protected defaultHeaders(): Record<string, string> {
     return {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
   }
 }

@@ -1,4 +1,4 @@
-import { RequestConfig, AuthHandler } from './types';
+import { RequestConfig, AuthHandler } from "./types";
 
 /**
  * Bearer token authentication handler
@@ -23,7 +23,7 @@ export class BearerTokenAuth implements AuthHandler {
 export class ApiKeyAuth implements AuthHandler {
   constructor(
     private apiKey: string,
-    private headerName: string = 'X-API-Key',
+    private headerName: string = "X-API-Key",
   ) {}
 
   apply(config: RequestConfig): RequestConfig {

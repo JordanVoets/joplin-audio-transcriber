@@ -2,21 +2,21 @@ name: Code Quality Checks
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - '**.ts'
-      - '**.js'
-      - '**.mts'
-      - '**.json'
-      - '**.md'
+      - "**.ts"
+      - "**.js"
+      - "**.mts"
+      - "**.json"
+      - "**.md"
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - '**.ts'
-      - '**.js'
-      - '**.mts'
-      - '**.json'
-      - '**.md'
+      - "**.ts"
+      - "**.js"
+      - "**.mts"
+      - "**.json"
+      - "**.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,38 +25,38 @@ concurrency:
 jobs:
   prettier:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run Prettier check
-      run: npx prettier --check .
-  
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npx prettier --check .
+
   eslint:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run ESLint check
-      run: npx eslint .
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint check
+        run: npx eslint .

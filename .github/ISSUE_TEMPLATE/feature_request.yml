@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for suggesting a feature! Please describe your idea below.
-  
+
   - type: textarea
     id: problem
     attributes:
@@ -16,7 +16,7 @@ body:
       placeholder: I'm frustrated when...
     validations:
       required: false
-  
+
   - type: textarea
     id: solution
     attributes:
@@ -25,7 +25,7 @@ body:
       placeholder: I would like to...
     validations:
       required: true
-  
+
   - type: textarea
     id: alternatives
     attributes:
@@ -34,7 +34,7 @@ body:
       placeholder: I've tried...
     validations:
       required: false
-  
+
   - type: dropdown
     id: category
     attributes:
@@ -49,7 +49,7 @@ body:
         - Other
     validations:
       required: true
-  
+
   - type: textarea
     id: additional
     attributes:

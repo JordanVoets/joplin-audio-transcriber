@@ -10,7 +10,7 @@ export class GeminiConnector extends Connector {
   }
 
   baseUrl(): string {
-    return 'https://generativelanguage.googleapis.com/v1beta';
+    return 'https://generativelanguage.googleapis.com/v1beta/';
   }
 
   protected defaultHeaders(): Record<string, string> {

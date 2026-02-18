@@ -5,7 +5,7 @@ describe('OpenAIConnector', () => {
   describe('baseUrl', () => {
     it('should return the correct OpenAI API base URL', () => {
       const connector = new OpenAIConnector('test-api-key');
-      expect(connector.baseUrl()).toBe('https://api.openai.com/v1');
+      expect(connector.baseUrl()).toBe('https://api.openai.com/v1/');
     });
   });
 

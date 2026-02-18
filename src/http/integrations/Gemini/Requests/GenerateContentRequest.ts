@@ -56,7 +56,7 @@ export class GenerateContentRequest extends Request<string> {
   }
 
   endpoint(): string {
-    return `/models/${this.model}:generateContent`;
+    return `models/${this.model}:generateContent`;
   }
 
   body(): GenerateContentRequestBody {

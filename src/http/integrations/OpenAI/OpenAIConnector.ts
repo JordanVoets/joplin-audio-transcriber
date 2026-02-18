@@ -10,6 +10,6 @@ export class OpenAIConnector extends Connector {
   }
 
   baseUrl(): string {
-    return 'https://api.openai.com/v1';
+    return 'https://api.openai.com/v1/';
   }
 }

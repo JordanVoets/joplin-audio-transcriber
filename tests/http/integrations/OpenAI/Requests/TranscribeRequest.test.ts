@@ -15,7 +15,7 @@ describe('TranscribeRequest', () => {
       const audioBlob = new Blob(['audio data'], { type: 'audio/mp3' });
       const request = new TranscribeRequest(audioBlob, 'test.mp3', 'whisper-1');
 
-      expect(request.endpoint()).toBe('/audio/transcriptions');
+      expect(request.endpoint()).toBe('audio/transcriptions');
     });
   });
 

@@ -37,7 +37,7 @@ export class TranscribeRequest extends Request<string> {
   }
 
   endpoint(): string {
-    return '/audio/transcriptions';
+    return 'audio/transcriptions';
   }
 
   protected headers(): Record<string, string> {

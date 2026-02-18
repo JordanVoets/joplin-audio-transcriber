@@ -23,7 +23,7 @@ describe('GenerateContentRequest', () => {
         'audio/mp3',
       );
 
-      expect(request.endpoint()).toBe('/models/gemini-2.0-flash:generateContent');
+      expect(request.endpoint()).toBe('models/gemini-2.0-flash:generateContent');
     });
 
     it('should handle different model names', () => {
@@ -34,7 +34,7 @@ describe('GenerateContentRequest', () => {
         'audio/mp3',
       );
 
-      expect(request.endpoint()).toBe('/models/gemini-1.5-pro:generateContent');
+      expect(request.endpoint()).toBe('models/gemini-1.5-pro:generateContent');
     });
   });
 

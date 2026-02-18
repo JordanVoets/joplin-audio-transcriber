@@ -5,7 +5,7 @@ describe('GeminiConnector', () => {
   describe('baseUrl', () => {
     it('should return the correct Gemini API base URL', () => {
       const connector = new GeminiConnector('test-api-key');
-      expect(connector.baseUrl()).toBe('https://generativelanguage.googleapis.com/v1beta');
+      expect(connector.baseUrl()).toBe('https://generativelanguage.googleapis.com/v1beta/');
     });
   });
 

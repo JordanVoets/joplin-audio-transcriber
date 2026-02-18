@@ -1,0 +1,24 @@
+# Dependency directories
+node_modules/
+package-lock.json
+yarn.lock
+
+# Joplin Build Artifacts
+publish/
+dist/
+api/
+
+# Compiled files
+*.js
+*.d.ts
+*.map
+
+# IDE and System files
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Metadata and Assets
+/src/manifest.json
+/assets/

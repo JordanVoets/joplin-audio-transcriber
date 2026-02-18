@@ -2,6 +2,11 @@ import { OpenAIConnector } from "../../../../../src/http/integrations/OpenAI/Ope
 import { TranscribeRequest } from "../../../../../src/http/integrations/OpenAI/Requests/TranscribeRequest";
 import { HttpMethod, Response } from "../../../../../src/http/types";
 
+// Helper type to access protected members for testing
+type RequestWithBody = {
+  body: () => FormData;
+};
+
 describe("TranscribeRequest", () => {
   describe("basic properties", () => {
     it("should have POST method", () => {
@@ -24,7 +29,7 @@ describe("TranscribeRequest", () => {
       const audioBlob = new Blob(["audio data"], { type: "audio/mp3" });
       const request = new TranscribeRequest(audioBlob, "test.mp3", "whisper-1");
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
 
       expect(body).toBeInstanceOf(FormData);
       // FormData doesn't provide direct access to entries in tests, so we verify it's FormData
@@ -39,7 +44,7 @@ describe("TranscribeRequest", () => {
         "en",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body).toBeInstanceOf(FormData);
     });
 
@@ -53,7 +58,7 @@ describe("TranscribeRequest", () => {
         "Custom prompt",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body).toBeInstanceOf(FormData);
     });
 
@@ -63,7 +68,9 @@ describe("TranscribeRequest", () => {
 
       models.forEach((model) => {
         const request = new TranscribeRequest(audioBlob, "test.mp3", model);
-        expect(request.body()).toBeInstanceOf(FormData);
+        expect((request as unknown as RequestWithBody).body()).toBeInstanceOf(
+          FormData,
+        );
       });
     });
   });
@@ -211,7 +218,9 @@ describe("TranscribeRequest", () => {
           "test.file",
           "whisper-1",
         );
-        expect(request.body()).toBeInstanceOf(FormData);
+        expect((request as unknown as RequestWithBody).body()).toBeInstanceOf(
+          FormData,
+        );
       });
     });
 
@@ -226,7 +235,9 @@ describe("TranscribeRequest", () => {
 
       fileNames.forEach((name) => {
         const request = new TranscribeRequest(audioBlob, name, "whisper-1");
-        expect(request.body()).toBeInstanceOf(FormData);
+        expect((request as unknown as RequestWithBody).body()).toBeInstanceOf(
+          FormData,
+        );
       });
     });
 
@@ -260,7 +271,7 @@ describe("TranscribeRequest", () => {
         "Translate to English",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body).toBeInstanceOf(FormData);
     });
   });

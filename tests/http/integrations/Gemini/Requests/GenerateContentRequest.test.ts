@@ -2,6 +2,21 @@ import { GeminiConnector } from "../../../../../src/http/integrations/Gemini/Gem
 import { GenerateContentRequest } from "../../../../../src/http/integrations/Gemini/Requests/GenerateContentRequest";
 import { HttpMethod, Response } from "../../../../../src/http/types";
 
+// Helper type to access protected members for testing
+type RequestWithBody = {
+  body: () => {
+    contents: Array<{
+      parts: Array<{
+        text?: string;
+        inline_data?: {
+          mime_type: string;
+          data: string;
+        };
+      }>;
+    }>;
+  };
+};
+
 describe("GenerateContentRequest", () => {
   describe("basic properties", () => {
     it("should have POST method", () => {
@@ -53,7 +68,7 @@ describe("GenerateContentRequest", () => {
         mimeType,
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
 
       expect(body.contents).toBeDefined();
       expect(body.contents).toHaveLength(1);
@@ -82,7 +97,7 @@ describe("GenerateContentRequest", () => {
           mimeType,
         );
 
-        const body = request.body();
+        const body = (request as unknown as RequestWithBody).body();
         expect(body.contents[0].parts[1].inline_data.mime_type).toBe(mimeType);
       });
     });
@@ -97,7 +112,7 @@ describe("GenerateContentRequest", () => {
         "audio/mp3",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body.contents[0].parts[0].text).toBe(customPrompt);
     });
   });
@@ -371,7 +386,7 @@ describe("GenerateContentRequest", () => {
         "audio/mp3",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body.contents[0].parts[1].inline_data.data).toBe(longBase64);
     });
 
@@ -384,7 +399,7 @@ describe("GenerateContentRequest", () => {
         "audio/mp3",
       );
 
-      const body = request.body();
+      const body = (request as unknown as RequestWithBody).body();
       expect(body.contents[0].parts[0].text).toBe(specialPrompt);
     });
 

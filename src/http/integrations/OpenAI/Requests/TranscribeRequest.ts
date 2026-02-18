@@ -46,7 +46,7 @@ export class TranscribeRequest extends Request<string> {
     };
   }
 
-  body(): FormData {
+  protected body(): FormData {
     const formData = new FormData();
     formData.append("file", this.audioData, this.fileName);
     formData.append("model", this.model);

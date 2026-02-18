@@ -59,7 +59,7 @@ export class GenerateContentRequest extends Request<string> {
     return `models/${this.model}:generateContent`;
   }
 
-  body(): GenerateContentRequestBody {
+  protected body(): GenerateContentRequestBody {
     return {
       contents: [
         {

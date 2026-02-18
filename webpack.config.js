@@ -6,7 +6,7 @@
 // update, you can easily restore the functionality you've added.
 // -----------------------------------------------------------------------------
 
-/* eslint-disable no-console */
+ 
 
 const path = require('path');
 const crypto = require('crypto');
@@ -91,7 +91,6 @@ function currentGitInfo() {
 function validateCategories(categories) {
 	if (!categories) return null;
 	if ((categories.length !== new Set(categories).size)) throw new Error('Repeated categories are not allowed');
-	// eslint-disable-next-line github/array-foreach -- Old code before rule was applied
 	categories.forEach(category => {
 		if (!allPossibleCategories.map(category => { return category.name; }).includes(category)) throw new Error(`${category} is not a valid category. Please make sure that the category name is lowercase. Valid categories are: \n${allPossibleCategories.map(category => { return category.name; })}\n`);
 	});

@@ -80,6 +80,16 @@ npm install
 npm run dist
 ```
 
+### Linting
+
+To lint and format the code:
+
+```bash
+npm run lint
+```
+
+This command runs ESLint with auto-fix and Prettier to format all files according to the project's code style.
+
 ### Project Structure
 
 ```

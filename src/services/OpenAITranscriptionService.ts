@@ -12,7 +12,10 @@ export class OpenAITranscriptionService implements ITranscriptionService {
 		this.config = config;
 	}
 
-	async transcribe(audioData: Blob, fileName: string, mimeType: string): Promise<string> {
+	/**
+	 * @param _mimeType - The MIME type of the audio file (unused)
+	 */
+	async transcribe(audioData: Blob, fileName: string, _mimeType: string): Promise<string> {
 		const formData = new FormData();
 		formData.append('file', audioData, fileName);
 		formData.append('model', this.config.model || 'whisper-1');

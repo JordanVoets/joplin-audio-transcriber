@@ -11,7 +11,10 @@ export class GeminiTranscriptionService implements ITranscriptionService {
 		this.config = config;
 	}
 
-	async transcribe(audioData: Blob, fileName: string, mimeType: string): Promise<string> {
+	/**
+	 * @param _fileName - The name of the audio file (unused)
+	 */
+	async transcribe(audioData: Blob, _fileName: string, mimeType: string): Promise<string> {
 		// Convert Blob to base64
 		const base64Audio = await this.blobToBase64(audioData);
 		

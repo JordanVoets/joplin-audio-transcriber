@@ -2,7 +2,7 @@
  * Tests for authentication handlers
  */
 
-import { BearerTokenAuth, ApiKeyAuth, BasicAuth, CustomHeaderAuth } from '../../src/http/auth';
+import { BearerTokenAuth, ApiKeyAuth, BasicAuth, CustomHeaderAuth, QueryParamAuth } from '../../src/http/auth';
 import { RequestConfig, HttpMethod } from '../../src/http/types';
 
 describe('BearerTokenAuth', () => {
@@ -234,5 +234,81 @@ describe('CustomHeaderAuth', () => {
     expect(result.headers?.['X-Header-1']).toBe('value1');
     expect(result.headers?.['X-Header-2']).toBe('value2');
     expect(result.headers?.['X-Header-3']).toBe('value3');
+  });
+});
+
+describe('QueryParamAuth', () => {
+  it('should add query parameter for authentication', () => {
+    const auth = new QueryParamAuth('key', 'my-api-key');
+    const config: RequestConfig = {
+      method: HttpMethod.GET,
+      endpoint: '/test',
+      headers: {},
+    };
+
+    const result = auth.apply(config);
+
+    expect(result.query?.['key']).toBe('my-api-key');
+  });
+
+  it('should add query parameter with custom param name', () => {
+    const auth = new QueryParamAuth('api_key', 'secret123');
+    const config: RequestConfig = {
+      method: HttpMethod.POST,
+      endpoint: '/api/data',
+      headers: {},
+    };
+
+    const result = auth.apply(config);
+
+    expect(result.query?.['api_key']).toBe('secret123');
+  });
+
+  it('should preserve existing query parameters', () => {
+    const auth = new QueryParamAuth('key', 'api-key-value');
+    const config: RequestConfig = {
+      method: HttpMethod.GET,
+      endpoint: '/test',
+      headers: {},
+      query: {
+        'filter': 'active',
+        'limit': 10,
+      },
+    };
+
+    const result = auth.apply(config);
+
+    expect(result.query?.['key']).toBe('api-key-value');
+    expect(result.query?.['filter']).toBe('active');
+    expect(result.query?.['limit']).toBe(10);
+  });
+
+  it('should override existing query parameter with same name', () => {
+    const auth = new QueryParamAuth('token', 'new-token');
+    const config: RequestConfig = {
+      method: HttpMethod.GET,
+      endpoint: '/test',
+      headers: {},
+      query: {
+        'token': 'old-token',
+      },
+    };
+
+    const result = auth.apply(config);
+
+    expect(result.query?.['token']).toBe('new-token');
+  });
+
+  it('should work when config has no query parameters initially', () => {
+    const auth = new QueryParamAuth('key', 'value');
+    const config: RequestConfig = {
+      method: HttpMethod.GET,
+      endpoint: '/test',
+      headers: {},
+    };
+
+    const result = auth.apply(config);
+
+    expect(result.query?.['key']).toBe('value');
   });
 });

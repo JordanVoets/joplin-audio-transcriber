@@ -25,6 +25,7 @@ export {
   ApiKeyAuth,
   BasicAuth,
   CustomHeaderAuth,
+  QueryParamAuth,
 } from './auth';
 
 // Middleware and interceptors

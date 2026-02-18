@@ -74,3 +74,23 @@ export class CustomHeaderAuth implements AuthHandler {
     };
   }
 }
+
+/**
+ * Query parameter authentication handler (for APIs that require key in URL)
+ */
+export class QueryParamAuth implements AuthHandler {
+  constructor(
+    private paramName: string,
+    private paramValue: string,
+  ) {}
+
+  apply(config: RequestConfig): RequestConfig {
+    return {
+      ...config,
+      query: {
+        ...config.query,
+        [this.paramName]: this.paramValue,
+      },
+    };
+  }
+}

@@ -18,7 +18,7 @@ describe('GeminiConnector', () => {
   });
 
   describe('authentication', () => {
-    it('should apply API key authentication', async () => {
+    it('should apply API key authentication as query parameter', async () => {
       const apiKey = 'test-api-key-12345';
       const connector = new GeminiConnector(apiKey);
 
@@ -55,8 +55,8 @@ describe('GeminiConnector', () => {
       expect(executeSpy).toHaveBeenCalled();
       const callConfig = executeSpy.mock.calls[0][0];
       
-      // Verify the API key is in the endpoint (for API key auth with query param)
-      expect((callConfig as any).endpoint).toContain('gemini-2.0-flash');
+      // Verify the API key is in the query parameters
+      expect((callConfig as any).query?.['key']).toBe(apiKey);
 
       executeSpy.mockRestore();
     });

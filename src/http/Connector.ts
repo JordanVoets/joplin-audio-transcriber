@@ -137,6 +137,12 @@ export abstract class Connector {
     if (config.method !== HttpMethod.GET && config.body !== undefined) {
       if (config.body instanceof FormData || config.body instanceof Blob) {
         options.body = config.body as BodyInit;
+        // Remove Content-Type header for FormData - let browser set it with boundary
+        if (options.headers && typeof options.headers === 'object') {
+          const headers = { ...options.headers };
+          delete headers['Content-Type'];
+          options.headers = headers;
+        }
       } else {
         options.body = JSON.stringify(config.body);
       }

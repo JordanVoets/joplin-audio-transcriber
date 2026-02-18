@@ -104,22 +104,24 @@ export const errorLoggingHandler = (): ErrorHandler => {
 };
 
 /**
- * Retry error handler - attempts to retry failed requests
+ * Retry error handler - identifies retryable failures.
+ *
+ * Note: This is a placeholder and does NOT perform automatic retries.
+ * Actual retry logic should be implemented in the Connector or caller,
+ * using `maxRetries` and `retryableStatuses` as configuration.
  */
 export const retryErrorHandler = (
   maxRetries: number = 3,
   retryableStatuses: number[] = [408, 429, 500, 502, 503, 504],
 ): ErrorHandler => {
-  let retryCount = 0;
-
   return (error) => {
-    if (retryCount < maxRetries && retryableStatuses.includes(error.status)) {
-      retryCount++;
-      console.log(`[HTTP] Retrying request (${retryCount}/${maxRetries})`);
-      // Note: Actual retry logic would need to be implemented in the Connector
-      // This is just a placeholder to demonstrate the concept
-    } else {
-      retryCount = 0;
+    if (retryableStatuses.includes(error.status)) {
+      console.log(
+        `[HTTP] Request failed with retryable status ${error.status}. ` +
+          `Max retries configured: ${maxRetries}. ` +
+          "No automatic retry is performed by retryErrorHandler; " +
+          "implement retry logic in the Connector.",
+      );
     }
   };
 };

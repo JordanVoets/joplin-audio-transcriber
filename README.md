@@ -90,6 +90,22 @@ npm run lint
 
 This command runs ESLint with auto-fix and Prettier to format all files according to the project's code style.
 
+### Testing
+
+The project uses Jest for unit and integration testing with full TypeScript support.
+
+**Run all tests:**
+
+```bash
+jest test
+```
+
+**Run tests in watch mode** (useful during development):
+
+```bash
+npm run test:watch
+```
+
 ### Project Structure
 
 ```

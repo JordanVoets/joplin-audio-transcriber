@@ -1,12 +1,17 @@
-import { ITranscriptionService, TranscriptionServiceConfig } from './ITranscriptionService';
-import { OpenAITranscriptionService } from './OpenAITranscriptionService';
-import { GeminiTranscriptionService } from './GeminiTranscriptionService';
+import {
+  ITranscriptionService,
+  TranscriptionServiceConfig,
+} from "./ITranscriptionService";
+import { OpenAITranscriptionService } from "./OpenAITranscriptionService";
+import { GeminiTranscriptionService } from "./GeminiTranscriptionService";
 
-type TranscriptionServiceConstructor = new (config: TranscriptionServiceConfig) => ITranscriptionService;
+type TranscriptionServiceConstructor = new (
+  config: TranscriptionServiceConfig,
+) => ITranscriptionService;
 
 interface ServiceRegistration {
-	constructor: TranscriptionServiceConstructor;
-	displayName: string;
+  constructor: TranscriptionServiceConstructor;
+  displayName: string;
 }
 
 /**
@@ -16,16 +21,22 @@ interface ServiceRegistration {
  * 2. Add a new entry to the SERVICES object below with a unique key and display name
  */
 export const SERVICES: Record<string, ServiceRegistration> = {
-	'openai': { constructor: OpenAITranscriptionService, displayName: 'OpenAI Whisper' },
-	'gemini': { constructor: GeminiTranscriptionService, displayName: 'Google Gemini' },
-	// Add new services here...
+  openai: {
+    constructor: OpenAITranscriptionService,
+    displayName: "OpenAI Whisper",
+  },
+  gemini: {
+    constructor: GeminiTranscriptionService,
+    displayName: "Google Gemini",
+  },
+  // Add new services here...
 };
 
 /**
  * Get all available service providers.
  */
 export function getAvailableProviders(): string[] {
-	return Object.keys(SERVICES);
+  return Object.keys(SERVICES);
 }
 
 /**
@@ -33,9 +44,9 @@ export function getAvailableProviders(): string[] {
  * Returns an object mapping provider keys to display names.
  */
 export function getProviderOptions(): Record<string, string> {
-	const options: Record<string, string> = {};
-	for (const [key, registration] of Object.entries(SERVICES)) {
-		options[key] = registration.displayName;
-	}
-	return options;
+  const options: Record<string, string> = {};
+  for (const [key, registration] of Object.entries(SERVICES)) {
+    options[key] = registration.displayName;
+  }
+  return options;
 }

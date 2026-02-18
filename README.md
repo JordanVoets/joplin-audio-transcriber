@@ -18,10 +18,12 @@ A Joplin plugin that transcribes audio files attached to your notes using AI-pow
 ## Installation
 
 ### From Joplin Plugin Marketplace
+
 > [!IMPORTANT]
 > This plugin is not yet available in the official Joplin Plugin Marketplace. You can only install it [from source](#from-source) for now.
 
 ### From Source
+
 1. Clone this repository
 2. Install dependencies: `npm install`
 3. Build the plugin: `npm run dist`
@@ -37,19 +39,21 @@ After installation, configure the plugin in Joplin settings:
 3. Configure the following:
    - **Transcription Provider**: Choose between OpenAI or Google Gemini
    - **API Key**: Enter your API key (stored securely)
-   - **Model** *(optional)*: Specify a model (e.g., `whisper-1` for OpenAI, `gemini-1.5-flash` for Gemini)
-   - **Language** *(optional)*: Set language code for transcription (e.g., `en`, `es`, `fr`)
-   - **Custom Prompt** *(optional)*: Add custom instructions for the transcription
+   - **Model** _(optional)_: Specify a model (e.g., `whisper-1` for OpenAI, `gemini-1.5-flash` for Gemini)
+   - **Language** _(optional)_: Set language code for transcription (e.g., `en`, `es`, `fr`)
+   - **Custom Prompt** _(optional)_: Add custom instructions for the transcription
 
 ### Obtaining API Keys
 
 **OpenAI:**
+
 1. Visit [OpenAI API Platform](https://platform.openai.com)
 2. Create an account and go to **API keys**
 3. Generate a new API key
 4. Copy and paste it into the Joplin settings
 
 **Google Gemini:**
+
 1. Visit [Google AI Studio](https://aistudio.google.com)
 2. Click **Get API Key** and create a new API key
 3. Copy and paste it into the Joplin settings
@@ -65,16 +69,19 @@ After installation, configure the plugin in Joplin settings:
 ## Development
 
 ### Prerequisites
+
 - Node.js and npm
 - TypeScript knowledge (the plugin is written in TypeScript)
 
 ### Building
+
 ```bash
 npm install
 npm run dist
 ```
 
 ### Project Structure
+
 ```
 src/
 ├── index.ts                           # Plugin entry point
@@ -94,16 +101,19 @@ See the [Adding New Services](./wiki/Adding-New-Services.md) guide in the projec
 ## Troubleshooting
 
 **"Please select a valid audio file"**
+
 - Make sure you've attached an audio file to the note
 - Select the file link (the `[filename](:/resourceId)` markdown link)
 - Audio formats supported: MP3, WAV, OGG, FLAC, AAC
 
 **"API error"**
+
 - Verify your API key is correct and has sufficient credits
 - Check if your API key is still valid (not expired)
 - Ensure your network connection is stable
 
 **"No transcription result"**
+
 - Try with a different audio file
 - Check the Joplin console (Help > Toggle Console) for error messages
 - Verify the audio file quality and duration

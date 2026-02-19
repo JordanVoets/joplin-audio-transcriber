@@ -2,6 +2,7 @@ import joplin from "api";
 import { ToolbarButtonLocation, SettingItemType } from "api/types";
 import { TranscriptionServiceFactory } from "./services/TranscriptionServiceFactory";
 import { TranscriptionServiceConfig } from "./services/ITranscriptionService";
+import { transcribeWithChunking } from "./services/utils/chunkedTranscription";
 
 joplin.plugins.register({
   onStart: async function () {
@@ -144,9 +145,9 @@ joplin.plugins.register({
             config,
           );
 
-          // Use the service to transcribe (dependency on interface, not implementation)
-
-          const transcription = await transcriptionService.transcribe(
+          // Transcribe with automatic chunking for large files
+          const transcription = await transcribeWithChunking(
+            transcriptionService,
             blob,
             file.title,
             file.mime,

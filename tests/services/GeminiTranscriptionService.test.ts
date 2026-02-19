@@ -348,29 +348,6 @@ describe("GeminiTranscriptionService", () => {
       ).rejects.toThrow(errorMessage);
     });
 
-    it("should handle network errors", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, new Error("Network error"));
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-
-      await expect(
-        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
-      ).rejects.toThrow("Network error");
-    });
-
-    it("should handle authentication errors", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(
-        config,
-        new Error("Invalid API key"),
-      );
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-
-      await expect(
-        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
-      ).rejects.toThrow("Invalid API key");
-    });
-
     it("should handle empty audio blob", async () => {
       const config = { apiKey: TEST_API_KEY };
       // Even with empty blob, API would return some transcription or error

@@ -52,7 +52,7 @@ export class GeminiTranscriptionService implements ITranscriptionService {
         const base64String = (reader.result as string).split(",")[1];
         resolve(base64String);
       };
-      reader.onerror = reject;
+      reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsDataURL(blob);
     });
   }

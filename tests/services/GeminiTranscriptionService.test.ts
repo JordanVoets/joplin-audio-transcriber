@@ -424,7 +424,6 @@ describe("GeminiTranscriptionService", () => {
         });
       });
 
-      const originalFileReader = global.FileReader;
       global.FileReader = mockFileReaderError as unknown as typeof FileReader;
 
       await expect(

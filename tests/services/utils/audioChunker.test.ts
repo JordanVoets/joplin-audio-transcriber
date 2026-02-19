@@ -445,7 +445,8 @@ describe("audioChunker", () => {
 
       // Check that segment_time was called with a value that includes the 0.9 factor
       const outputOptionsCall =
-        mockFfmpegInstance.outputOptions.mock.calls[0][0];      const segmentTimeOption = outputOptionsCall.find((opt: string) =>
+        mockFfmpegInstance.outputOptions.mock.calls[0][0];
+      const segmentTimeOption = outputOptionsCall.find((opt: string) =>
         opt.includes("segment_time"),
       );
 
@@ -458,7 +459,6 @@ describe("audioChunker", () => {
       const segmentTime = parseFloat(timeMatch![1]);
       expect(segmentTime).toBeLessThan(30);
       expect(segmentTime).toBeCloseTo(27, 0);
-      
     });
   });
 });

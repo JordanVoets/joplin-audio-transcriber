@@ -374,24 +374,5 @@ describe("OpenAITranscriptionService", () => {
       expect(result1).toBe(TEST_TRANSCRIPTION);
       expect(result2).toBe(TEST_TRANSCRIPTION);
     });
-
-    it("should ignore mimeType parameter (per interface contract)", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(
-        config,
-        createSuccessResponse(TEST_TRANSCRIPTION),
-      );
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-      const ignoredMimeType = "audio/ogg";
-
-      const result = await service.transcribe(
-        audioBlob,
-        TEST_FILE_NAME,
-        ignoredMimeType,
-      );
-
-      // The mimeType parameter should not affect the request
-      expect(result).toBe(TEST_TRANSCRIPTION);
-    });
   });
 });

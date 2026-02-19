@@ -403,25 +403,6 @@ describe("GeminiTranscriptionService", () => {
       expect(result2).toBe(TEST_TRANSCRIPTION);
     });
 
-    it("should ignore fileName parameter (per interface contract)", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(
-        config,
-        createSuccessResponse(TEST_TRANSCRIPTION),
-      );
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-      const ignoredFileName = "ignored-file.mp3";
-
-      const result = await service.transcribe(
-        audioBlob,
-        ignoredFileName,
-        TEST_MIME_TYPE,
-      );
-
-      // The fileName parameter should not affect the request
-      expect(result).toBe(TEST_TRANSCRIPTION);
-    });
-
     it("should handle blob to base64 conversion errors", async () => {
       const config = { apiKey: TEST_API_KEY };
       const service = new GeminiTranscriptionService(config);

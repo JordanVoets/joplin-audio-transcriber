@@ -3,13 +3,38 @@ import { OpenAIConnector } from "../../src/http/integrations/OpenAI/OpenAIConnec
 import { RequestConfig, Response } from "../../src/http/types";
 
 /**
+ * OpenAI API response format for Whisper transcription
+ */
+interface WhisperResponse {
+  text: string;
+}
+
+/**
+ * Type for accessing internal properties of OpenAITranscriptionService in tests
+ */
+interface OpenAIServiceWithInternals {
+  connector: OpenAIConnector;
+  config: {
+    apiKey: string;
+    model?: string;
+    language?: string;
+    customPrompt?: string;
+  };
+  transcribe: (
+    audioBlob: Blob,
+    fileName: string,
+    mimeType: string,
+  ) => Promise<string>;
+}
+
+/**
  * Mock connector that returns predefined responses without making network calls.
  * Follows the documented mocking pattern from Adding-New-Api-Integrations.md
  */
 class MockOpenAIConnector extends OpenAIConnector {
-  private mockResponse: Response<any> | Error;
+  private mockResponse: Response<WhisperResponse> | Error;
 
-  constructor(apiKey: string, mockResponse: Response<any> | Error) {
+  constructor(apiKey: string, mockResponse: Response<WhisperResponse> | Error) {
     super(apiKey);
     this.mockResponse = mockResponse;
   }
@@ -27,7 +52,6 @@ class MockOpenAIConnector extends OpenAIConnector {
 describe("OpenAITranscriptionService", () => {
   // Test data constants
   const TEST_API_KEY = "test-api-key-123";
-  const TEST_MODEL = "whisper-1";
   const TEST_LANGUAGE = "en";
   const TEST_PROMPT = "Custom transcription prompt";
   const TEST_AUDIO_DATA = "audio content";
@@ -36,7 +60,7 @@ describe("OpenAITranscriptionService", () => {
   const TEST_TRANSCRIPTION = "This is the transcribed text";
 
   // Helper to create a successful mock response in OpenAI API format
-  const createSuccessResponse = (text: string): Response<any> => ({
+  const createSuccessResponse = (text: string): Response<WhisperResponse> => ({
     status: 200,
     statusText: "OK",
     headers: {},
@@ -46,12 +70,18 @@ describe("OpenAITranscriptionService", () => {
 
   // Helper to create OpenAI service with mocked connector
   const createServiceWithMock = (
-    config: { apiKey: string; model?: string; language?: string; customPrompt?: string },
-    mockResponse: Response<any> | Error,
+    config: {
+      apiKey: string;
+      model?: string;
+      language?: string;
+      customPrompt?: string;
+    },
+    mockResponse: Response<WhisperResponse> | Error,
   ): OpenAITranscriptionService => {
     const service = new OpenAITranscriptionService(config);
     // Replace the connector with our mock
-    (service as any).connector = new MockOpenAIConnector(config.apiKey, mockResponse);
+    (service as unknown as OpenAIServiceWithInternals).connector =
+      new MockOpenAIConnector(config.apiKey, mockResponse);
     return service;
   };
 
@@ -61,7 +91,9 @@ describe("OpenAITranscriptionService", () => {
       const service = new OpenAITranscriptionService(config);
 
       expect(service).toBeInstanceOf(OpenAITranscriptionService);
-      expect((service as any).config.apiKey).toBe(TEST_API_KEY);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.apiKey,
+      ).toBe(TEST_API_KEY);
     });
 
     it("should accept optional model in configuration", () => {
@@ -72,7 +104,9 @@ describe("OpenAITranscriptionService", () => {
       const service = new OpenAITranscriptionService(config);
 
       expect(service).toBeInstanceOf(OpenAITranscriptionService);
-      expect((service as any).config.model).toBe("whisper-1-custom");
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.model,
+      ).toBe("whisper-1-custom");
     });
 
     it("should accept optional language in configuration", () => {
@@ -83,7 +117,9 @@ describe("OpenAITranscriptionService", () => {
       const service = new OpenAITranscriptionService(config);
 
       expect(service).toBeInstanceOf(OpenAITranscriptionService);
-      expect((service as any).config.language).toBe(TEST_LANGUAGE);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.language,
+      ).toBe(TEST_LANGUAGE);
     });
 
     it("should accept optional customPrompt in configuration", () => {
@@ -94,17 +130,26 @@ describe("OpenAITranscriptionService", () => {
       const service = new OpenAITranscriptionService(config);
 
       expect(service).toBeInstanceOf(OpenAITranscriptionService);
-      expect((service as any).config.customPrompt).toBe(TEST_PROMPT);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.customPrompt,
+      ).toBe(TEST_PROMPT);
     });
   });
 
   describe("transcribe", () => {
     it("should transcribe audio with minimal configuration", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
     });
@@ -115,13 +160,22 @@ describe("OpenAITranscriptionService", () => {
         apiKey: TEST_API_KEY,
         model: customModel,
       };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
-      expect((service as any).config.model).toBe(customModel);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.model,
+      ).toBe(customModel);
     });
 
     it("should pass language parameter when configured", async () => {
@@ -129,13 +183,22 @@ describe("OpenAITranscriptionService", () => {
         apiKey: TEST_API_KEY,
         language: TEST_LANGUAGE,
       };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
-      expect((service as any).config.language).toBe(TEST_LANGUAGE);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.language,
+      ).toBe(TEST_LANGUAGE);
     });
 
     it("should pass custom prompt when configured", async () => {
@@ -143,13 +206,22 @@ describe("OpenAITranscriptionService", () => {
         apiKey: TEST_API_KEY,
         customPrompt: TEST_PROMPT,
       };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
-      expect((service as any).config.customPrompt).toBe(TEST_PROMPT);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.customPrompt,
+      ).toBe(TEST_PROMPT);
     });
 
     it("should pass all optional parameters when configured", async () => {
@@ -160,24 +232,44 @@ describe("OpenAITranscriptionService", () => {
         language: TEST_LANGUAGE,
         customPrompt: TEST_PROMPT,
       };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
-      expect((service as any).config.model).toBe(customModel);
-      expect((service as any).config.language).toBe(TEST_LANGUAGE);
-      expect((service as any).config.customPrompt).toBe(TEST_PROMPT);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.model,
+      ).toBe(customModel);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.language,
+      ).toBe(TEST_LANGUAGE);
+      expect(
+        (service as unknown as OpenAIServiceWithInternals).config.customPrompt,
+      ).toBe(TEST_PROMPT);
     });
 
     it("should handle different file names", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
       const fileName = "recording-2024-01-15.mp3";
 
-      const result = await service.transcribe(audioBlob, fileName, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        fileName,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
     });
@@ -191,10 +283,19 @@ describe("OpenAITranscriptionService", () => {
       ];
 
       for (const format of formats) {
-        const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
-        const audioBlob = new Blob([TEST_AUDIO_DATA], { type: format.mimeType });
-        
-        const result = await service.transcribe(audioBlob, format.fileName, format.mimeType);
+        const service = createServiceWithMock(
+          config,
+          createSuccessResponse(TEST_TRANSCRIPTION),
+        );
+        const audioBlob = new Blob([TEST_AUDIO_DATA], {
+          type: format.mimeType,
+        });
+
+        const result = await service.transcribe(
+          audioBlob,
+          format.fileName,
+          format.mimeType,
+        );
 
         expect(result).toBe(TEST_TRANSCRIPTION);
       }
@@ -203,10 +304,17 @@ describe("OpenAITranscriptionService", () => {
     it("should return transcription text from response", async () => {
       const config = { apiKey: TEST_API_KEY };
       const expectedText = "This is a different transcription";
-      const service = createServiceWithMock(config, createSuccessResponse(expectedText));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(expectedText),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(expectedText);
     });
@@ -218,7 +326,7 @@ describe("OpenAITranscriptionService", () => {
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
       await expect(
-        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE)
+        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
       ).rejects.toThrow(errorMessage);
     });
 
@@ -228,17 +336,20 @@ describe("OpenAITranscriptionService", () => {
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
       await expect(
-        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE)
+        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
       ).rejects.toThrow("Network error");
     });
 
     it("should handle authentication errors", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, new Error("Invalid API key"));
+      const service = createServiceWithMock(
+        config,
+        new Error("Invalid API key"),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
       await expect(
-        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE)
+        service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
       ).rejects.toThrow("Invalid API key");
     });
 
@@ -246,22 +357,42 @@ describe("OpenAITranscriptionService", () => {
       const config = { apiKey: TEST_API_KEY };
       // Even with empty blob, API would return some transcription or error
       // For testing, we verify the service can handle empty blobs without crashing
-      const service = createServiceWithMock(config, createSuccessResponse("(silence)"));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse("(silence)"),
+      );
       const emptyBlob = new Blob([], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(emptyBlob, TEST_FILE_NAME, TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        emptyBlob,
+        TEST_FILE_NAME,
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe("(silence)");
     });
 
     it("should create new request for each transcription", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob1 = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-      const audioBlob2 = new Blob(["different audio"], { type: TEST_MIME_TYPE });
+      const audioBlob2 = new Blob(["different audio"], {
+        type: TEST_MIME_TYPE,
+      });
 
-      const result1 = await service.transcribe(audioBlob1, "file1.mp3", TEST_MIME_TYPE);
-      const result2 = await service.transcribe(audioBlob2, "file2.mp3", TEST_MIME_TYPE);
+      const result1 = await service.transcribe(
+        audioBlob1,
+        "file1.mp3",
+        TEST_MIME_TYPE,
+      );
+      const result2 = await service.transcribe(
+        audioBlob2,
+        "file2.mp3",
+        TEST_MIME_TYPE,
+      );
 
       expect(result1).toBe(TEST_TRANSCRIPTION);
       expect(result2).toBe(TEST_TRANSCRIPTION);
@@ -269,11 +400,18 @@ describe("OpenAITranscriptionService", () => {
 
     it("should ignore mimeType parameter (per interface contract)", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
       const ignoredMimeType = "audio/ogg";
 
-      const result = await service.transcribe(audioBlob, TEST_FILE_NAME, ignoredMimeType);
+      const result = await service.transcribe(
+        audioBlob,
+        TEST_FILE_NAME,
+        ignoredMimeType,
+      );
 
       // The mimeType parameter should not affect the request
       expect(result).toBe(TEST_TRANSCRIPTION);
@@ -283,22 +421,43 @@ describe("OpenAITranscriptionService", () => {
   describe("integration with connector", () => {
     it("should use connector to send requests", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(config, createSuccessResponse(TEST_TRANSCRIPTION));
+      const service = createServiceWithMock(
+        config,
+        createSuccessResponse(TEST_TRANSCRIPTION),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result = await service.transcribe(audioBlob, "file1.mp3", TEST_MIME_TYPE);
+      const result = await service.transcribe(
+        audioBlob,
+        "file1.mp3",
+        TEST_MIME_TYPE,
+      );
 
       expect(result).toBe(TEST_TRANSCRIPTION);
     });
 
     it("should handle multiple transcriptions independently", async () => {
       const config = { apiKey: TEST_API_KEY };
-      const service1 = createServiceWithMock(config, createSuccessResponse("First transcription"));
-      const service2 = createServiceWithMock(config, createSuccessResponse("Second transcription"));
+      const service1 = createServiceWithMock(
+        config,
+        createSuccessResponse("First transcription"),
+      );
+      const service2 = createServiceWithMock(
+        config,
+        createSuccessResponse("Second transcription"),
+      );
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      const result1 = await service1.transcribe(audioBlob, "file1.mp3", TEST_MIME_TYPE);
-      const result2 = await service2.transcribe(audioBlob, "file2.mp3", TEST_MIME_TYPE);
+      const result1 = await service1.transcribe(
+        audioBlob,
+        "file1.mp3",
+        TEST_MIME_TYPE,
+      );
+      const result2 = await service2.transcribe(
+        audioBlob,
+        "file2.mp3",
+        TEST_MIME_TYPE,
+      );
 
       expect(result1).toBe("First transcription");
       expect(result2).toBe("Second transcription");

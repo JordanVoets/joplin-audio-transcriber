@@ -39,7 +39,7 @@ interface GeminiServiceWithInternals {
 interface MockFileReader {
   result: string | ArrayBuffer | null;
   onloadend: (() => void) | null;
-  onerror: ((error: Error) => void) | null;
+  onerror: ((event: ProgressEvent) => void) | null;
   readAsDataURL: (blob: Blob) => void;
 }
 
@@ -68,7 +68,7 @@ class MockGeminiConnector extends GeminiConnector {
   }
 }
 
-// Store original FileReader for restoration in afterEach
+// Factory function to create a default FileReader mock for tests
 const createDefaultFileReaderMock = () => {
   return jest.fn().mockImplementation(function (this: MockFileReader) {
     this.result = null;
@@ -406,7 +406,7 @@ describe("GeminiTranscriptionService", () => {
       const service = new GeminiTranscriptionService(config);
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      // Use jest.spyOn to temporarily override FileReader behavior for this test
+      // Mock FileReader to simulate an error condition during this test
       const mockFileReaderError = jest.fn().mockImplementation(function (
         this: MockFileReader,
       ) {
@@ -416,7 +416,9 @@ describe("GeminiTranscriptionService", () => {
         this.readAsDataURL = jest.fn(function (this: MockFileReader) {
           setTimeout(() => {
             if (this.onerror) {
-              this.onerror(new Error("FileReader error"));
+              // Simulate FileReader error with a ProgressEvent-like object
+              const progressEvent = { type: "error" } as ProgressEvent;
+              this.onerror(progressEvent);
             }
           }, 0);
         });
@@ -426,7 +428,7 @@ describe("GeminiTranscriptionService", () => {
 
       await expect(
         service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
-      ).rejects.toThrow("FileReader error");
+      ).rejects.toThrow("Failed to read file");
 
       // No manual restoration needed - afterEach will reset FileReader
     });

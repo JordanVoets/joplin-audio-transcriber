@@ -68,25 +68,30 @@ class MockGeminiConnector extends GeminiConnector {
   }
 }
 
+// Store original FileReader for restoration in afterEach
+const createDefaultFileReaderMock = () => {
+  return jest.fn().mockImplementation(function (
+    this: MockFileReader,
+  ) {
+    this.result = null;
+    this.onloadend = null;
+    this.onerror = null;
+    this.readAsDataURL = jest.fn(function (this: MockFileReader, blob: Blob) {
+      // Simulate async file reading
+      setTimeout(() => {
+        // Convert blob to base64 string
+        const base64 = btoa("mock-audio-data");
+        this.result = `data:${blob.type};base64,${base64}`;
+        if (this.onloadend) {
+          this.onloadend();
+        }
+      }, 0);
+    });
+  }) as unknown as typeof FileReader;
+};
+
 // Mock FileReader for blobToBase64 conversion
-global.FileReader = jest.fn().mockImplementation(function (
-  this: MockFileReader,
-) {
-  this.result = null;
-  this.onloadend = null;
-  this.onerror = null;
-  this.readAsDataURL = jest.fn(function (this: MockFileReader, blob: Blob) {
-    // Simulate async file reading
-    setTimeout(() => {
-      // Convert blob to base64 string
-      const base64 = btoa("mock-audio-data");
-      this.result = `data:${blob.type};base64,${base64}`;
-      if (this.onloadend) {
-        this.onloadend();
-      }
-    }, 0);
-  });
-}) as unknown as typeof FileReader;
+global.FileReader = createDefaultFileReaderMock();
 
 describe("GeminiTranscriptionService", () => {
   // Test data constants
@@ -97,6 +102,11 @@ describe("GeminiTranscriptionService", () => {
   const TEST_MIME_TYPE = "audio/mp3";
   const TEST_TRANSCRIPTION = "This is the transcribed text from Gemini";
   const TEST_CUSTOM_PROMPT = "Custom Gemini transcription prompt";
+
+  // Ensure FileReader is properly reset between tests
+  afterEach(() => {
+    global.FileReader = createDefaultFileReaderMock();
+  });
 
   // Helper to create a successful mock response in Gemini API format
   const createSuccessResponse = (
@@ -417,7 +427,7 @@ describe("GeminiTranscriptionService", () => {
       const service = new GeminiTranscriptionService(config);
       const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
 
-      // Mock FileReader to simulate error
+      // Use jest.spyOn to temporarily override FileReader behavior for this test
       const mockFileReaderError = jest.fn().mockImplementation(function (
         this: MockFileReader,
       ) {
@@ -432,32 +442,15 @@ describe("GeminiTranscriptionService", () => {
           }, 0);
         });
       });
+
+      const originalFileReader = global.FileReader;
       global.FileReader = mockFileReaderError as unknown as typeof FileReader;
 
       await expect(
         service.transcribe(audioBlob, TEST_FILE_NAME, TEST_MIME_TYPE),
       ).rejects.toThrow("FileReader error");
 
-      // Restore original mock
-      global.FileReader = jest.fn().mockImplementation(function (
-        this: MockFileReader,
-      ) {
-        this.result = null;
-        this.onloadend = null;
-        this.onerror = null;
-        this.readAsDataURL = jest.fn(function (
-          this: MockFileReader,
-          blob: Blob,
-        ) {
-          setTimeout(() => {
-            const base64 = btoa("mock-audio-data");
-            this.result = `data:${blob.type};base64,${base64}`;
-            if (this.onloadend) {
-              this.onloadend();
-            }
-          }, 0);
-        });
-      }) as unknown as typeof FileReader;
+      // No manual restoration needed - afterEach will reset FileReader
     });
   });
 });

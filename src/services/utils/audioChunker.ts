@@ -7,7 +7,10 @@ import { join } from "path";
  * Error thrown when audio chunking fails.
  */
 export class AudioChunkingError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+  ) {
     super(message);
     this.name = "AudioChunkingError";
   }
@@ -121,9 +124,7 @@ export async function splitAudioBlob(
 
     // Read chunk files and convert to Blobs
     const allFiles = await fs.readdir(tempDir);
-    const chunkFiles = allFiles
-      .filter((f) => f.startsWith("chunk-"))
-      .sort(); // Ensure chunks are in order
+    const chunkFiles = allFiles.filter((f) => f.startsWith("chunk-")).sort(); // Ensure chunks are in order
 
     if (chunkFiles.length === 0) {
       throw new AudioChunkingError(

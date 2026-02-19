@@ -9,6 +9,8 @@ on:
       - "jest.config.js"
       - "tsconfig.json"
       - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/tests.yml"
   pull_request:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - "jest.config.js"
       - "tsconfig.json"
       - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/tests.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

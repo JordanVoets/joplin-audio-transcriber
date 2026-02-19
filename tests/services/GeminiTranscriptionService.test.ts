@@ -70,9 +70,7 @@ class MockGeminiConnector extends GeminiConnector {
 
 // Store original FileReader for restoration in afterEach
 const createDefaultFileReaderMock = () => {
-  return jest.fn().mockImplementation(function (
-    this: MockFileReader,
-  ) {
+  return jest.fn().mockImplementation(function (this: MockFileReader) {
     this.result = null;
     this.onloadend = null;
     this.onerror = null;

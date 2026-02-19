@@ -16,6 +16,13 @@ export interface ITranscriptionService {
     fileName: string,
     mimeType: string,
   ): Promise<string>;
+
+  /**
+   * Gets the maximum file size allowed by the transcription service.
+   *
+   * @returns The maximum file size in number of bytes
+   */
+  getMaxFileSize(): number;
 }
 
 /**

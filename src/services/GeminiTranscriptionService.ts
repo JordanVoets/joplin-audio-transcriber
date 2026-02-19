@@ -56,4 +56,11 @@ export class GeminiTranscriptionService implements ITranscriptionService {
       reader.readAsDataURL(blob);
     });
   }
+
+  getMaxFileSize(): number {
+    // Gemini API has a 100MB limit for base64-encoded payloads.
+    // Since base64 encoding increases size by ~33%, we limit the
+    // original file to ~75MB to stay within the API constraint.
+    return 75 * 1024 * 1024; // 75 MB
+  }
 }

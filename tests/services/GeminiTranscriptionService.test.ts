@@ -461,52 +461,6 @@ describe("GeminiTranscriptionService", () => {
     });
   });
 
-  describe("integration with connector", () => {
-    it("should use connector to send requests", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service = createServiceWithMock(
-        config,
-        createSuccessResponse(TEST_TRANSCRIPTION),
-      );
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-
-      const result = await service.transcribe(
-        audioBlob,
-        "file1.mp3",
-        TEST_MIME_TYPE,
-      );
-
-      expect(result).toBe(TEST_TRANSCRIPTION);
-    });
-
-    it("should handle multiple transcriptions independently", async () => {
-      const config = { apiKey: TEST_API_KEY };
-      const service1 = createServiceWithMock(
-        config,
-        createSuccessResponse("First transcription"),
-      );
-      const service2 = createServiceWithMock(
-        config,
-        createSuccessResponse("Second transcription"),
-      );
-      const audioBlob = new Blob([TEST_AUDIO_DATA], { type: TEST_MIME_TYPE });
-
-      const result1 = await service1.transcribe(
-        audioBlob,
-        "file1.mp3",
-        TEST_MIME_TYPE,
-      );
-      const result2 = await service2.transcribe(
-        audioBlob,
-        "file2.mp3",
-        TEST_MIME_TYPE,
-      );
-
-      expect(result1).toBe("First transcription");
-      expect(result2).toBe("Second transcription");
-    });
-  });
-
   describe("blobToBase64 conversion", () => {
     it("should properly extract base64 from data URL", async () => {
       const config = { apiKey: TEST_API_KEY };

@@ -6,6 +6,19 @@
 export const SAFETY_MARGIN = 0.93;
 
 /**
+ * Supported audio MIME types for chunking.
+ * Only MP3 and WAV formats are supported as they can reliably resynchronize
+ * at arbitrary byte boundaries.
+ */
+const SUPPORTED_MIME_TYPES = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/wave",
+  "audio/x-wav",
+];
+
+/**
  * Error thrown when audio chunking fails.
  */
 export class AudioChunkingError extends Error {
@@ -19,108 +32,13 @@ export class AudioChunkingError extends Error {
 }
 
 /**
- * Audio format compatibility information for chunking.
- * Indicates how robust each format is when split at arbitrary byte boundaries.
+ * Validates if the audio format is supported for chunking.
+ * @param mimeType - The MIME type to validate
+ * @returns True if the format is supported
  */
-interface AudioFormatInfo {
-  /** Whether the format can reliably resynchronize at arbitrary byte boundaries */
-  canResynchronize: boolean;
-  /** Minimum recommended chunk size for this format (to minimize frame splits) */
-  minChunkSize: number;
-  /** Warning message if format has limitations */
-  warning?: string;
-}
-
-/**
- * Map of MIME types to their format compatibility info.
- * Decoders like libFLAC, Opus, and some AAC implementations may fail
- * to resynchronize if split mid-frame, while MP3 and WAV are more resilient.
- */
-const FORMAT_COMPATIBILITY: Record<string, AudioFormatInfo> = {
-  "audio/mpeg": {
-    canResynchronize: true,
-    minChunkSize: 1 * 1024 * 1024, // 1 MB (MP3 frames are ~100-200KB)
-  },
-  "audio/mp3": {
-    canResynchronize: true,
-    minChunkSize: 1 * 1024 * 1024,
-  },
-  "audio/wav": {
-    canResynchronize: true,
-    minChunkSize: 512 * 1024, // 512 KB (WAV is frame-less, just samples)
-  },
-  "audio/wave": {
-    canResynchronize: true,
-    minChunkSize: 512 * 1024,
-  },
-  "audio/x-wav": {
-    canResynchronize: true,
-    minChunkSize: 512 * 1024,
-  },
-  "audio/flac": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024, // 5 MB (FLAC frames are ~100KB, be conservative)
-    warning:
-      "FLAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/x-flac": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024,
-    warning:
-      "FLAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/ogg": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024, // 5 MB (Ogg/Vorbis pages are ~4-8KB)
-    warning:
-      "OGG files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/opus": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024, // 5 MB (Opus frames are small ~20-40ms)
-    warning:
-      "Opus files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/aac": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024, // 5 MB (AAC frames are ~100-200 samples)
-    warning:
-      "AAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/x-m4a": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024,
-    warning:
-      "M4A files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/m4a": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024,
-    warning:
-      "M4A files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-  "audio/webm": {
-    canResynchronize: false,
-    minChunkSize: 5 * 1024 * 1024,
-    warning:
-      "WebM files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
-  },
-};
-
-/**
- * Gets format compatibility information for an audio MIME type.
- * @param mimeType - The audio MIME type
- * @returns Format compatibility information with recommended chunk size
- */
-function getFormatInfo(mimeType: string): AudioFormatInfo {
+function isSupportedFormat(mimeType: string): boolean {
   const normalized = mimeType.toLowerCase();
-  return (
-    FORMAT_COMPATIBILITY[normalized] || {
-      canResynchronize: false, // Be conservative for unknown formats
-      minChunkSize: 5 * 1024 * 1024,
-      warning: `Unknown audio format "${mimeType}". Chunks may not be valid audio. Consider using MP3 or WAV instead.`,
-    }
-  );
+  return SUPPORTED_MIME_TYPES.includes(normalized);
 }
 
 /**
@@ -165,22 +83,22 @@ function findNextMP3FrameSync(
 }
 
 /**
- * Splits an audio blob into smaller chunks with format-aware safety.
- * For robust formats (MP3, WAV), uses byte-based splitting.
- * For fragile formats (FLAC, Opus, AAC), searches for frame boundaries when possible.
+ * Splits an audio blob into smaller chunks.
+ * Only MP3 and WAV formats are supported as they can reliably resynchronize
+ * at arbitrary byte boundaries.
  *
  * This approach:
- * - Preserves playability by respecting format constraints
+ * - Uses byte-based splitting for WAV files
+ * - Attempts to find MP3 frame boundaries for cleaner splits
  * - Works without requiring FFmpeg or other external dependencies
  * - Is suitable for Joplin plugin environment
- * - Warns users about format-specific limitations
  *
  * @param blob - The original audio blob to split
  * @param maxChunkSize - Maximum size in bytes for each chunk
- * @param mimeType - MIME type of the audio file (e.g., 'audio/mpeg', 'audio/wav')
+ * @param mimeType - MIME type of the audio file (must be 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', or 'audio/x-wav')
  * @returns Array of audio blobs, each with the specified MIME type
  *
- * @throws {AudioChunkingError} If chunking parameters are invalid
+ * @throws {AudioChunkingError} If chunking parameters are invalid or format is unsupported
  *
  * @example
  * ```typescript
@@ -198,6 +116,13 @@ export async function splitAudioBlob(
   mimeType: string,
 ): Promise<Blob[]> {
   try {
+    // Validate format is supported
+    if (!isSupportedFormat(mimeType)) {
+      throw new AudioChunkingError(
+        `Unsupported audio format: ${mimeType}. Only MP3 and WAV formats are supported for chunking. Please convert your file to one of these formats.`,
+      );
+    }
+
     // Validate inputs
     if (maxChunkSize <= 0) {
       throw new AudioChunkingError("Maximum chunk size must be greater than 0");
@@ -210,23 +135,9 @@ export async function splitAudioBlob(
     // Apply safety margin to avoid hitting exact limits due to encoding overhead
     maxChunkSize = Math.floor(maxChunkSize * SAFETY_MARGIN);
 
-    // Get format compatibility information
-    const formatInfo = getFormatInfo(mimeType);
-
     // If blob is smaller than max size, return as-is
     if (blob.size <= maxChunkSize) {
-      // Warn if format has limitations
-      if (formatInfo.warning) {
-        console.warn(`Audio format warning: ${formatInfo.warning}`);
-      }
       return [blob];
-    }
-
-    // If format is not resilient to arbitrary byte splitting, warn user
-    if (!formatInfo.canResynchronize) {
-      console.warn(
-        `Caution: ${mimeType} format may produce unplayable chunks when split at arbitrary byte boundaries. ${formatInfo.warning || ""}`,
-      );
     }
 
     // Convert blob to buffer for chunking

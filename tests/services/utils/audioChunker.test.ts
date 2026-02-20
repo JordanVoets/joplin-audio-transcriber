@@ -269,79 +269,57 @@ describe("audioChunker", () => {
       expect(totalSize).toBe(kb10);
     });
 
-    describe("format-aware chunking", () => {
-      it("should warn about fragile formats when chunking", async () => {
-        const consoleWarnSpy = jest
-          .spyOn(console, "warn")
-          .mockImplementation(() => {});
-
+    describe("format validation", () => {
+      it("should reject unsupported formats (FLAC)", async () => {
         const audioData = new Blob([new ArrayBuffer(3 * 1024)], {
-          // Just 3 KB
           type: "audio/flac",
         });
 
-        await splitAudioBlob(audioData, 1024, "audio/flac");
-
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          expect.stringContaining("FLAC"),
+        await expect(
+          splitAudioBlob(audioData, 1024, "audio/flac"),
+        ).rejects.toThrow(
+          "Unsupported audio format: audio/flac. Only MP3 and WAV formats are supported for chunking.",
         );
-        consoleWarnSpy.mockRestore();
       });
 
-      it("should warn about fragile formats in no-chunk case", async () => {
-        const consoleWarnSpy = jest
-          .spyOn(console, "warn")
-          .mockImplementation(() => {});
-
+      it("should reject unsupported formats (Opus)", async () => {
         const audioData = new Blob([new ArrayBuffer(1000)], {
           type: "audio/opus",
         });
-        const maxChunkSize = 5000;
 
-        await splitAudioBlob(audioData, maxChunkSize, "audio/opus");
-
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          expect.stringContaining("Audio format warning"),
+        await expect(
+          splitAudioBlob(audioData, 5000, "audio/opus"),
+        ).rejects.toThrow(
+          "Unsupported audio format: audio/opus. Only MP3 and WAV formats are supported for chunking.",
         );
-        consoleWarnSpy.mockRestore();
       });
 
-      it("should not warn about robust formats", async () => {
-        const consoleWarnSpy = jest
-          .spyOn(console, "warn")
-          .mockImplementation(() => {});
-
-        const audioData = new Blob([new ArrayBuffer(3 * 1024)], {
-          // Just 3 KB
-          type: "audio/mpeg",
+      it("should reject unsupported formats (AAC)", async () => {
+        const audioData = new Blob([new ArrayBuffer(1000)], {
+          type: "audio/aac",
         });
 
-        await splitAudioBlob(audioData, 1024, "audio/mpeg");
-
-        expect(consoleWarnSpy).not.toHaveBeenCalled();
-        consoleWarnSpy.mockRestore();
+        await expect(
+          splitAudioBlob(audioData, 5000, "audio/aac"),
+        ).rejects.toThrow(
+          "Unsupported audio format: audio/aac. Only MP3 and WAV formats are supported for chunking.",
+        );
       });
 
-      it("should warn about unknown formats", async () => {
-        const consoleWarnSpy = jest
-          .spyOn(console, "warn")
-          .mockImplementation(() => {});
-
+      it("should reject unknown formats", async () => {
         const audioData = new Blob([new ArrayBuffer(3 * 1024)], {
-          // Just 3 KB
           type: "audio/unknown-format",
         });
 
-        await splitAudioBlob(audioData, 1024, "audio/unknown-format");
-
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          expect.stringContaining("Unknown audio format"),
+        await expect(
+          splitAudioBlob(audioData, 1024, "audio/unknown-format"),
+        ).rejects.toThrow(
+          "Unsupported audio format: audio/unknown-format. Only MP3 and WAV formats are supported for chunking.",
         );
-        consoleWarnSpy.mockRestore();
       });
 
-      it("should handle different audio format MIME type variants", async () => {
-        const testCases = ["audio/mpeg", "audio/wav"];
+      it("should accept MP3 format variants", async () => {
+        const testCases = ["audio/mpeg", "audio/mp3"];
 
         for (const mimeType of testCases) {
           const audioData = new Blob([new ArrayBuffer(100)], {
@@ -353,20 +331,17 @@ describe("audioChunker", () => {
         }
       });
 
-      it("should handle fragile formats correctly", async () => {
-        // Just test one fragile format to keep tests fast
-        const consoleWarnSpy = jest
-          .spyOn(console, "warn")
-          .mockImplementation(() => {});
+      it("should accept WAV format variants", async () => {
+        const testCases = ["audio/wav", "audio/wave", "audio/x-wav"];
 
-        const audioData = new Blob([new ArrayBuffer(5 * 1024)], {
-          type: "audio/flac",
-        });
+        for (const mimeType of testCases) {
+          const audioData = new Blob([new ArrayBuffer(100)], {
+            type: mimeType,
+          });
+          const chunks = await splitAudioBlob(audioData, 50, mimeType);
 
-        await splitAudioBlob(audioData, 2 * 1024, "audio/flac");
-
-        expect(consoleWarnSpy).toHaveBeenCalled();
-        consoleWarnSpy.mockRestore();
+          expect(chunks.length).toBeGreaterThan(0);
+        }
       });
 
       it("should split MP3 at approximate frame boundaries when possible", async () => {

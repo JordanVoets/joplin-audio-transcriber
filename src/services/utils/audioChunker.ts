@@ -75,22 +75,22 @@ function findNextMP3FrameSyncInWindow(
 }
 
 /**
- * Finds the next MP3 frame sync marker in a blob by reading a small window.
- * This avoids loading the entire blob into memory.
+ * Finds the last MP3 frame sync marker before a given position by reading backwards.
+ * This ensures we never exceed the maximum chunk size when splitting at frame boundaries.
  *
  * @param blob - The audio blob to search
- * @param position - Byte position in the blob to search from
- * @param searchLimit - Maximum distance to search before giving up (for performance)
- * @returns Absolute position in the blob of the next frame sync marker, or -1 if not found
+ * @param position - Byte position in the blob to search up to (exclusive)
+ * @param searchLimit - Maximum distance to search backwards (for performance)
+ * @returns Absolute position in the blob of the last frame sync marker before position, or -1 if not found
  */
-async function findNextMP3FrameSync(
+async function findLastMP3FrameSyncBefore(
   blob: Blob,
   position: number,
-  searchLimit: number = 64 * 1024, // Search up to 64KB ahead
+  searchLimit: number = 64 * 1024, // Search up to 64KB backwards
 ): Promise<number> {
-  // Don't search past the end of the blob
-  const searchEnd = Math.min(position + searchLimit, blob.size);
-  const windowSize = searchEnd - position;
+  // Search from position - searchLimit to position
+  const searchStart = Math.max(0, position - searchLimit);
+  const windowSize = position - searchStart;
 
   if (windowSize < 2) {
     // Not enough data to find a sync marker
@@ -98,19 +98,29 @@ async function findNextMP3FrameSync(
   }
 
   // Read only a small window of data for scanning
-  const window = blob.slice(position, searchEnd);
+  const window = blob.slice(searchStart, position);
   const buffer = await window.arrayBuffer();
   const data = new Uint8Array(buffer);
 
-  // Find sync position within the window
-  const relativePos = findNextMP3FrameSyncInWindow(data);
+  // Find all syncs in the window and return the last one
+  let lastSyncPos = -1;
+  let currentOffset = 0;
 
-  if (relativePos === -1) {
+  while (currentOffset < data.length - 2) {
+    const syncPos = findNextMP3FrameSyncInWindow(data, currentOffset);
+    if (syncPos === -1) {
+      break;
+    }
+    lastSyncPos = syncPos;
+    currentOffset = syncPos + 1; // Continue searching after this sync
+  }
+
+  if (lastSyncPos === -1) {
     return -1;
   }
 
   // Convert relative position to absolute position in blob
-  return position + relativePos;
+  return searchStart + lastSyncPos;
 }
 
 /**
@@ -193,12 +203,13 @@ export async function splitAudioBlob(
       const start = currentPosition;
       let end = Math.min(start + maxChunkSize, blob.size);
 
-      // For MP3, try to find the next frame sync to avoid splitting mid-frame
+      // For MP3, try to find the last frame sync before 'end' to avoid splitting mid-frame
+      // while ensuring we never exceed maxChunkSize
       if (isMP3 && i < numChunks - 1) {
         // Don't search on the last chunk - just take whatever is left
-        const syncPos = await findNextMP3FrameSync(blob, end);
-        if (syncPos !== -1 && syncPos < blob.size) {
-          // Found a frame boundary within a reasonable distance
+        const syncPos = await findLastMP3FrameSyncBefore(blob, end);
+        if (syncPos !== -1 && syncPos > start) {
+          // Found a frame boundary that keeps chunk within size limit
           end = syncPos;
         }
         // If no sync found, just use the byte boundary (fallback)

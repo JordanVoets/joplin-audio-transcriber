@@ -2,6 +2,7 @@ import {
   splitAudioBlob,
   needsChunking,
   AudioChunkingError,
+  SAFETY_MARGIN,
 } from "../../../src/services/utils/audioChunker";
 
 describe("audioChunker", () => {
@@ -31,7 +32,6 @@ describe("audioChunker", () => {
 
   describe("splitAudioBlob", () => {
     const TEST_MIME_TYPE = "audio/mpeg";
-    const SAFETY_MARGIN = 0.93; // Matches the 0.93 margin applied in audioChunker.ts
 
     it("should return single blob if size is within limit", async () => {
       const audioData = new Blob([new ArrayBuffer(100)], {

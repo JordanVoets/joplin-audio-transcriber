@@ -15,7 +15,10 @@ jest.mock("../../../src/services/utils/audioChunker", () => ({
     .SAFETY_MARGIN,
 }));
 
-import { splitAudioBlob } from "../../../src/services/utils/audioChunker";
+import {
+  splitAudioBlob,
+  SAFETY_MARGIN,
+} from "../../../src/services/utils/audioChunker";
 
 /**
  * Mock implementation of ITranscriptionService for testing
@@ -113,7 +116,6 @@ describe("chunkedTranscription", () => {
 
       it("should transcribe directly when file is at effective limit (with safety margin)", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const SAFETY_MARGIN = 0.93; // Must match the constant in audioChunker.ts
         const effectiveMaxSize = Math.floor(maxFileSize * SAFETY_MARGIN);
         // Create file just under effective limit to avoid chunking
         const fileAtEffectiveLimit = createTestBlob(effectiveMaxSize - 1024);

@@ -11,9 +11,8 @@ jest.mock("../../../src/services/utils/audioChunker", () => ({
   AudioChunkingError: jest.requireActual(
     "../../../src/services/utils/audioChunker",
   ).AudioChunkingError,
-  SAFETY_MARGIN: jest.requireActual(
-    "../../../src/services/utils/audioChunker",
-  ).SAFETY_MARGIN,
+  SAFETY_MARGIN: jest.requireActual("../../../src/services/utils/audioChunker")
+    .SAFETY_MARGIN,
 }));
 
 import { splitAudioBlob } from "../../../src/services/utils/audioChunker";

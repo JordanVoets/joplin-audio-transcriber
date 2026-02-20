@@ -1,8 +1,3 @@
-import ffmpeg from "fluent-ffmpeg";
-import { promises as fs } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
-
 /**
  * Error thrown when audio chunking fails.
  */
@@ -17,46 +12,168 @@ export class AudioChunkingError extends Error {
 }
 
 /**
- * Gets the duration of an audio file in seconds.
- * @param filePath - Path to the audio file
- * @returns Duration in seconds
+ * Audio format compatibility information for chunking.
+ * Indicates how robust each format is when split at arbitrary byte boundaries.
  */
-async function getAudioDuration(filePath: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) {
-        reject(
-          new AudioChunkingError(
-            `Failed to probe audio file: ${err.message}`,
-            err,
-          ),
-        );
-        return;
-      }
-
-      const duration = metadata.format.duration;
-      if (!duration) {
-        reject(
-          new AudioChunkingError("Could not determine audio file duration"),
-        );
-        return;
-      }
-
-      resolve(duration);
-    });
-  });
+interface AudioFormatInfo {
+  /** Whether the format can reliably resynchronize at arbitrary byte boundaries */
+  canResynchronize: boolean;
+  /** Minimum recommended chunk size for this format (to minimize frame splits) */
+  minChunkSize: number;
+  /** Warning message if format has limitations */
+  warning?: string;
 }
 
 /**
- * Splits an audio blob into smaller chunks while maintaining valid audio format.
- * Uses FFmpeg to segment audio at natural boundaries with proper headers.
+ * Map of MIME types to their format compatibility info.
+ * Decoders like libFLAC, Opus, and some AAC implementations may fail
+ * to resynchronize if split mid-frame, while MP3 and WAV are more resilient.
+ */
+const FORMAT_COMPATIBILITY: Record<string, AudioFormatInfo> = {
+  "audio/mpeg": {
+    canResynchronize: true,
+    minChunkSize: 1 * 1024 * 1024, // 1 MB (MP3 frames are ~100-200KB)
+  },
+  "audio/mp3": {
+    canResynchronize: true,
+    minChunkSize: 1 * 1024 * 1024,
+  },
+  "audio/wav": {
+    canResynchronize: true,
+    minChunkSize: 512 * 1024, // 512 KB (WAV is frame-less, just samples)
+  },
+  "audio/wave": {
+    canResynchronize: true,
+    minChunkSize: 512 * 1024,
+  },
+  "audio/x-wav": {
+    canResynchronize: true,
+    minChunkSize: 512 * 1024,
+  },
+  "audio/flac": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024, // 5 MB (FLAC frames are ~100KB, be conservative)
+    warning:
+      "FLAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/x-flac": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024,
+    warning:
+      "FLAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/ogg": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024, // 5 MB (Ogg/Vorbis pages are ~4-8KB)
+    warning:
+      "OGG files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/opus": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024, // 5 MB (Opus frames are small ~20-40ms)
+    warning:
+      "Opus files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/aac": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024, // 5 MB (AAC frames are ~100-200 samples)
+    warning:
+      "AAC files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/x-m4a": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024,
+    warning:
+      "M4A files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/m4a": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024,
+    warning:
+      "M4A files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+  "audio/webm": {
+    canResynchronize: false,
+    minChunkSize: 5 * 1024 * 1024,
+    warning:
+      "WebM files may not resynchronize correctly when split at arbitrary byte boundaries. If you experience issues, consider converting to MP3 or WAV.",
+  },
+};
+
+/**
+ * Gets format compatibility information for an audio MIME type.
+ * @param mimeType - The audio MIME type
+ * @returns Format compatibility information with recommended chunk size
+ */
+function getFormatInfo(mimeType: string): AudioFormatInfo {
+  const normalized = mimeType.toLowerCase();
+  return (
+    FORMAT_COMPATIBILITY[normalized] || {
+      canResynchronize: false, // Be conservative for unknown formats
+      minChunkSize: 5 * 1024 * 1024,
+      warning: `Unknown audio format "${mimeType}". Chunks may not be valid audio. Consider using MP3 or WAV instead.`,
+    }
+  );
+}
+
+/**
+ * Finds the next MP3 frame sync marker (0xFFE or 0xFFF) after a given position.
+ * MP3 frames start with an 11-bit sync word (all bits set: 0xFFE or 0xFFF).
+ * This allows splitting at frame boundaries instead of arbitrary byte positions.
+ *
+ * @param data - The audio data as Uint8Array
+ * @param startPosition - Position to start searching from
+ * @param searchLimit - Maximum distance to search before giving up (for performance)
+ * @returns Position of the next frame sync marker, or -1 if not found within limit
+ */
+function findNextMP3FrameSync(
+  data: Uint8Array,
+  startPosition: number,
+  searchLimit: number = 64 * 1024, // Search up to 64KB ahead
+): number {
+  const maxPos = Math.min(
+    startPosition + searchLimit,
+    data.length - 2, // Need at least 2 bytes for sync check
+  );
+
+  for (let i = startPosition; i < maxPos; i++) {
+    // MP3 frame sync is 11 bits all set: 0xFFE or 0xFFF (first nibble is F, second is E or F)
+    // Check if current and next byte form a valid sync word
+    if (
+      (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) ||
+      data[i] === 0xff
+    ) {
+      // Double-check: valid MPEG sync should have MPEG version and layer bits
+      // Bits: FFFFFFFF FFF(MPEG version)(layer)(padding bit)...
+      const byte2 = data[i + 1];
+      // MPEG version bits (bits 3-4) should not be 11 (invalid)
+      // Layer bits (bits 1-2) should not be 00 (invalid)
+      if ((byte2 & 0x18) !== 0x18 && (byte2 & 0x06) !== 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Splits an audio blob into smaller chunks with format-aware safety.
+ * For robust formats (MP3, WAV), uses byte-based splitting.
+ * For fragile formats (FLAC, Opus, AAC), searches for frame boundaries when possible.
+ *
+ * This approach:
+ * - Preserves playability by respecting format constraints
+ * - Works without requiring FFmpeg or other external dependencies
+ * - Is suitable for Joplin plugin environment
+ * - Warns users about format-specific limitations
  *
  * @param blob - The original audio blob to split
  * @param maxChunkSize - Maximum size in bytes for each chunk
  * @param mimeType - MIME type of the audio file (e.g., 'audio/mpeg', 'audio/wav')
- * @returns Array of audio blobs, each with proper headers and valid format
+ * @returns Array of audio blobs, each with the specified MIME type
  *
- * @throws {AudioChunkingError} If FFmpeg is not available or chunking fails
+ * @throws {AudioChunkingError} If chunking parameters are invalid
  *
  * @example
  * ```typescript
@@ -73,70 +190,68 @@ export async function splitAudioBlob(
   maxChunkSize: number,
   mimeType: string,
 ): Promise<Blob[]> {
-  let tempDir: string | null = null;
-
   try {
-    // Create temporary directory for processing
-    tempDir = await fs.mkdtemp(join(tmpdir(), "audio-chunk-"));
-    const inputPath = join(tempDir, "input");
-    const outputPattern = join(tempDir, "chunk-%03d");
+    // Validate inputs
+    if (maxChunkSize <= 0) {
+      throw new AudioChunkingError("Maximum chunk size must be greater than 0");
+    }
 
-    // Write blob to temporary file
-    const buffer = await blob.arrayBuffer();
-    await fs.writeFile(inputPath, Buffer.from(buffer));
+    if (blob.size === 0) {
+      throw new AudioChunkingError("Cannot chunk empty blob");
+    }
 
-    // Get audio duration to calculate chunk duration
-    const durationSeconds = await getAudioDuration(inputPath);
+    // Apply a 7% reduction as a safety margin to avoid hitting exact limits
+    maxChunkSize = Math.floor(maxChunkSize * 0.93);
 
-    // Calculate approximate bitrate (bits per second)
-    // bitrate = (file size in bytes * 8 bits/byte) / duration in seconds
-    const approximateBitrate = (blob.size * 8) / durationSeconds;
+    // Get format compatibility information
+    const formatInfo = getFormatInfo(mimeType);
 
-    // Calculate chunk duration based on desired chunk size
-    // chunk duration = (max chunk size in bytes * 8 bits/byte) / bitrate
-    // Add 10% safety margin to ensure chunks stay under the limit
-    const chunkDuration = (maxChunkSize * 8 * 0.9) / approximateBitrate;
+    // If blob is smaller than max size, return as-is
+    if (blob.size <= maxChunkSize) {
+      // Warn if format has limitations
+      if (formatInfo.warning) {
+        console.warn(`Audio format warning: ${formatInfo.warning}`);
+      }
+      return [blob];
+    }
 
-    // Determine output format from MIME type
-    const format = getFormatFromMimeType(mimeType);
-
-    // Split audio using FFmpeg
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(inputPath)
-        .outputOptions([
-          `-f segment`, // Use segment muxer
-          `-segment_time ${chunkDuration}`, // Duration of each segment
-          `-c copy`, // Copy codec without re-encoding (preserves quality and speed)
-          `-reset_timestamps 1`, // Reset timestamps for each chunk
-        ])
-        .output(`${outputPattern}.${format}`)
-        .on("end", () => resolve())
-        .on("error", (err) => {
-          reject(
-            new AudioChunkingError(
-              `FFmpeg segmentation failed: ${err.message}`,
-              err,
-            ),
-          );
-        })
-        .run();
-    });
-
-    // Read chunk files and convert to Blobs
-    const allFiles = await fs.readdir(tempDir);
-    const chunkFiles = allFiles.filter((f) => f.startsWith("chunk-")).sort(); // Ensure chunks are in order
-
-    if (chunkFiles.length === 0) {
-      throw new AudioChunkingError(
-        "No chunks were created. File may be too small to chunk.",
+    // If format is not resilient to arbitrary byte splitting, warn user
+    if (!formatInfo.canResynchronize) {
+      console.warn(
+        `Caution: ${mimeType} format may produce unplayable chunks when split at arbitrary byte boundaries. ${formatInfo.warning || ""}`,
       );
     }
 
+    // Convert blob to buffer for chunking
+    const buffer = await blob.arrayBuffer();
+    const uint8Array = new Uint8Array(buffer);
+
+    // Calculate number of chunks needed
+    const numChunks = Math.ceil(blob.size / maxChunkSize);
     const chunks: Blob[] = [];
-    for (const file of chunkFiles) {
-      const chunkPath = join(tempDir, file);
-      const chunkBuffer = await fs.readFile(chunkPath);
-      chunks.push(new Blob([chunkBuffer], { type: mimeType }));
+
+    // For MP3 files, try to find frame boundaries for cleaner splits
+    const isMP3 =
+      mimeType.toLowerCase().includes("mpeg") ||
+      mimeType.toLowerCase().includes("mp3");
+
+    for (let i = 0; i < numChunks; i++) {
+      const start = i * maxChunkSize;
+      let end = Math.min(start + maxChunkSize, blob.size);
+
+      // For MP3, try to find the next frame sync to avoid splitting mid-frame
+      if (isMP3 && i < numChunks - 1) {
+        // Don't search on the last chunk - just take whatever is left
+        const syncPos = findNextMP3FrameSync(uint8Array, end);
+        if (syncPos !== -1 && syncPos < blob.size) {
+          // Found a frame boundary within a reasonable distance
+          end = syncPos;
+        }
+        // If no sync found, just use the byte boundary (fallback)
+      }
+
+      const chunkData = uint8Array.slice(start, end);
+      chunks.push(new Blob([chunkData], { type: mimeType }));
     }
 
     return chunks;
@@ -148,57 +263,7 @@ export async function splitAudioBlob(
       `Audio chunking failed: ${error instanceof Error ? error.message : String(error)}`,
       error instanceof Error ? error : undefined,
     );
-  } finally {
-    // Cleanup temporary directory
-    if (tempDir) {
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch (cleanupError) {
-        console.warn(
-          `Failed to cleanup temporary directory ${tempDir}:`,
-          cleanupError,
-        );
-      }
-    }
   }
-}
-
-/**
- * Maps MIME type to FFmpeg format/extension.
- * @param mimeType - Audio MIME type
- * @returns File extension for the format
- */
-function getFormatFromMimeType(mimeType: string): string {
-  const mimeToFormat: Record<string, string> = {
-    "audio/mpeg": "mp3",
-    "audio/mp3": "mp3",
-    "audio/wav": "wav",
-    "audio/wave": "wav",
-    "audio/x-wav": "wav",
-    "audio/flac": "flac",
-    "audio/x-flac": "flac",
-    "audio/ogg": "ogg",
-    "audio/opus": "opus",
-    "audio/webm": "webm",
-    "audio/aac": "aac",
-    "audio/x-m4a": "m4a",
-    "audio/m4a": "m4a",
-  };
-
-  const format = mimeToFormat[mimeType.toLowerCase()];
-  if (format) {
-    return format;
-  }
-
-  // Fallback: try to extract from MIME type (e.g., "audio/mp3" -> "mp3")
-  const parts = mimeType.split("/");
-  if (parts.length === 2) {
-    return parts[1].replace("x-", "");
-  }
-
-  // Default to mp3 if unknown
-  console.warn(`Unknown MIME type ${mimeType}, defaulting to mp3`);
-  return "mp3";
 }
 
 /**

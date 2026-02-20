@@ -18,13 +18,13 @@ export class ChunkedTranscriptionError extends Error {
  * Transcribes audio data with automatic chunking if the file exceeds service limits.
  *
  * This function transparently handles large files by:
- * 1. Checking if the service has a maximum file size limit
+ * 1. Checking the service's maximum file size limit via getMaxFileSize()
  * 2. Splitting the audio into chunks if it exceeds the limit
  * 3. Transcribing each chunk sequentially
  * 4. Concatenating the results
  *
- * If the file is within limits or the service has no size restriction,
- * the audio is transcribed directly without chunking.
+ * If the file is within the service's limit, it is transcribed directly without chunking.
+ * Services can return Infinity from getMaxFileSize() to indicate no file size limit.
  *
  * @param service - The transcription service to use
  * @param audioData - The audio file as a Blob

@@ -64,10 +64,7 @@ function findNextMP3FrameSync(
   for (let i = startPosition; i < maxPos; i++) {
     // MP3 frame sync is 11 bits all set: 0xFFE or 0xFFF (first nibble is F, second is E or F)
     // Check if current and next byte form a valid sync word
-    if (
-      (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) ||
-      data[i] === 0xff
-    ) {
+    if (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) {
       // Double-check: valid MPEG sync should have MPEG version and layer bits
       // Bits: FFFFFFFF FFF(MPEG version)(layer)(padding bit)...
       const byte2 = data[i + 1];

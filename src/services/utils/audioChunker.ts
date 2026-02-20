@@ -42,26 +42,21 @@ function isSupportedFormat(mimeType: string): boolean {
 }
 
 /**
- * Finds the next MP3 frame sync marker (0xFFE or 0xFFF) after a given position.
+ * Finds the next MP3 frame sync marker (0xFFE or 0xFFF) in a data buffer.
  * MP3 frames start with an 11-bit sync word (all bits set: 0xFFE or 0xFFF).
  * This allows splitting at frame boundaries instead of arbitrary byte positions.
  *
- * @param data - The audio data as Uint8Array
- * @param startPosition - Position to start searching from
- * @param searchLimit - Maximum distance to search before giving up (for performance)
- * @returns Position of the next frame sync marker, or -1 if not found within limit
+ * @param data - The audio data window as Uint8Array
+ * @param startOffset - Offset to start searching from within the data window
+ * @returns Position within the data window of the next frame sync marker, or -1 if not found
  */
-function findNextMP3FrameSync(
+function findNextMP3FrameSyncInWindow(
   data: Uint8Array,
-  startPosition: number,
-  searchLimit: number = 64 * 1024, // Search up to 64KB ahead
+  startOffset: number = 0,
 ): number {
-  const maxPos = Math.min(
-    startPosition + searchLimit,
-    data.length - 2, // Need at least 2 bytes for sync check
-  );
+  const maxPos = data.length - 2; // Need at least 2 bytes for sync check
 
-  for (let i = startPosition; i < maxPos; i++) {
+  for (let i = startOffset; i < maxPos; i++) {
     // MP3 frame sync is 11 bits all set: 0xFFE or 0xFFF (first nibble is F, second is E or F)
     // Check if current and next byte form a valid sync word
     if (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) {
@@ -77,6 +72,45 @@ function findNextMP3FrameSync(
   }
 
   return -1;
+}
+
+/**
+ * Finds the next MP3 frame sync marker in a blob by reading a small window.
+ * This avoids loading the entire blob into memory.
+ *
+ * @param blob - The audio blob to search
+ * @param position - Byte position in the blob to search from
+ * @param searchLimit - Maximum distance to search before giving up (for performance)
+ * @returns Absolute position in the blob of the next frame sync marker, or -1 if not found
+ */
+async function findNextMP3FrameSync(
+  blob: Blob,
+  position: number,
+  searchLimit: number = 64 * 1024, // Search up to 64KB ahead
+): Promise<number> {
+  // Don't search past the end of the blob
+  const searchEnd = Math.min(position + searchLimit, blob.size);
+  const windowSize = searchEnd - position;
+
+  if (windowSize < 2) {
+    // Not enough data to find a sync marker
+    return -1;
+  }
+
+  // Read only a small window of data for scanning
+  const window = blob.slice(position, searchEnd);
+  const buffer = await window.arrayBuffer();
+  const data = new Uint8Array(buffer);
+
+  // Find sync position within the window
+  const relativePos = findNextMP3FrameSyncInWindow(data);
+
+  if (relativePos === -1) {
+    return -1;
+  }
+
+  // Convert relative position to absolute position in blob
+  return position + relativePos;
 }
 
 /**
@@ -137,10 +171,6 @@ export async function splitAudioBlob(
       return [blob];
     }
 
-    // Convert blob to buffer for chunking
-    const buffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(buffer);
-
     // Calculate number of chunks needed
     const numChunks = Math.ceil(blob.size / maxChunkSize);
     const chunks: Blob[] = [];
@@ -150,14 +180,16 @@ export async function splitAudioBlob(
       mimeType.toLowerCase().includes("mpeg") ||
       mimeType.toLowerCase().includes("mp3");
 
+    let currentPosition = 0;
+
     for (let i = 0; i < numChunks; i++) {
-      const start = i * maxChunkSize;
+      const start = currentPosition;
       let end = Math.min(start + maxChunkSize, blob.size);
 
       // For MP3, try to find the next frame sync to avoid splitting mid-frame
       if (isMP3 && i < numChunks - 1) {
         // Don't search on the last chunk - just take whatever is left
-        const syncPos = findNextMP3FrameSync(uint8Array, end);
+        const syncPos = await findNextMP3FrameSync(blob, end);
         if (syncPos !== -1 && syncPos < blob.size) {
           // Found a frame boundary within a reasonable distance
           end = syncPos;
@@ -165,8 +197,12 @@ export async function splitAudioBlob(
         // If no sync found, just use the byte boundary (fallback)
       }
 
-      const chunkData = uint8Array.slice(start, end);
-      chunks.push(new Blob([chunkData], { type: mimeType }));
+      // Use Blob.slice() to extract chunk without loading entire file into memory
+      const chunk = blob.slice(start, end, mimeType);
+      chunks.push(chunk);
+
+      // Update position for next chunk
+      currentPosition = end;
     }
 
     return chunks;

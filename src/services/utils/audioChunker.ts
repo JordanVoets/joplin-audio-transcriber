@@ -1,4 +1,11 @@
 /**
+ * Safety margin (93%) applied to service file size limits to account for
+ * multipart/form-data and base64 encoding overhead.
+ * This 7% reduction helps prevent 413 errors when files are just under the limit.
+ */
+export const SAFETY_MARGIN = 0.93;
+
+/**
  * Error thrown when audio chunking fails.
  */
 export class AudioChunkingError extends Error {
@@ -200,8 +207,8 @@ export async function splitAudioBlob(
       throw new AudioChunkingError("Cannot chunk empty blob");
     }
 
-    // Apply a 7% reduction as a safety margin to avoid hitting exact limits
-    maxChunkSize = Math.floor(maxChunkSize * 0.93);
+    // Apply safety margin to avoid hitting exact limits due to encoding overhead
+    maxChunkSize = Math.floor(maxChunkSize * SAFETY_MARGIN);
 
     // Get format compatibility information
     const formatInfo = getFormatInfo(mimeType);

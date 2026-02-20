@@ -1,5 +1,9 @@
 import type { ITranscriptionService } from "../ITranscriptionService";
-import { splitAudioBlob, AudioChunkingError } from "./audioChunker";
+import {
+  splitAudioBlob,
+  AudioChunkingError,
+  SAFETY_MARGIN,
+} from "./audioChunker";
 
 /**
  * Error thrown when chunked transcription fails.
@@ -43,18 +47,20 @@ export async function transcribeWithChunking(
   try {
     // Check if service has a file size limit
     const maxFileSize = service.getMaxFileSize();
+    // Apply safety margin to account for multipart/base64 encoding overhead
+    const effectiveMaxSize = Math.floor(maxFileSize * SAFETY_MARGIN);
 
-    // If no limit or file is within limits, transcribe directly
-    if (audioData.size <= maxFileSize) {
+    // If file is within the effective limit (with safety margin), transcribe directly
+    if (audioData.size <= effectiveMaxSize) {
       console.log(
-        `File size (${formatBytes(audioData.size)}) is within service limit (${formatBytes(maxFileSize)}). Transcribing directly...`,
+        `File size (${formatBytes(audioData.size)}) is within service limit (${formatBytes(maxFileSize)}, effective: ${formatBytes(effectiveMaxSize)}). Transcribing directly...`,
       );
       return await service.transcribe(audioData, fileName, mimeType);
     }
 
-    // File exceeds limit - needs chunking
+    // File exceeds effective limit - needs chunking
     console.log(
-      `File size (${formatBytes(audioData.size)}) exceeds service limit (${formatBytes(maxFileSize)}). Splitting into chunks...`,
+      `File size (${formatBytes(audioData.size)}) exceeds effective limit (${formatBytes(effectiveMaxSize)}). Splitting into chunks...`,
     );
 
     // Split audio into chunks

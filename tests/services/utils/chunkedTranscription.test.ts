@@ -11,6 +11,9 @@ jest.mock("../../../src/services/utils/audioChunker", () => ({
   AudioChunkingError: jest.requireActual(
     "../../../src/services/utils/audioChunker",
   ).AudioChunkingError,
+  SAFETY_MARGIN: jest.requireActual(
+    "../../../src/services/utils/audioChunker",
+  ).SAFETY_MARGIN,
 }));
 
 import { splitAudioBlob } from "../../../src/services/utils/audioChunker";
@@ -98,13 +101,16 @@ describe("chunkedTranscription", () => {
         expect(splitAudioBlob).not.toHaveBeenCalled();
       });
 
-      it("should transcribe directly when file exactly equals limit", async () => {
+      it("should transcribe directly when file is at effective limit (with safety margin)", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const fileAtLimit = createTestBlob(maxFileSize);
+        const SAFETY_MARGIN = 0.93; // Must match the constant in audioChunker.ts
+        const effectiveMaxSize = Math.floor(maxFileSize * SAFETY_MARGIN);
+        // Create file just under effective limit to avoid chunking
+        const fileAtEffectiveLimit = createTestBlob(effectiveMaxSize - 1024);
 
         const transcribeImpl = jest
           .fn()
-          .mockResolvedValue("At limit transcription");
+          .mockResolvedValue("At effective limit transcription");
         const service = new MockTranscriptionService(
           maxFileSize,
           transcribeImpl,
@@ -112,12 +118,12 @@ describe("chunkedTranscription", () => {
 
         const result = await transcribeWithChunking(
           service,
-          fileAtLimit,
+          fileAtEffectiveLimit,
           TEST_FILE_NAME,
           TEST_MIME_TYPE,
         );
 
-        expect(result).toBe("At limit transcription");
+        expect(result).toBe("At effective limit transcription");
         expect(transcribeImpl).toHaveBeenCalledTimes(1);
         expect(splitAudioBlob).not.toHaveBeenCalled();
       });

@@ -66,6 +66,17 @@ describe("chunkedTranscription", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock setTimeout to execute callbacks immediately (skip delays)
+    jest
+      .spyOn(global, "setTimeout")
+      .mockImplementation((callback: () => void): NodeJS.Timeout => {
+        callback();
+        return {} as NodeJS.Timeout;
+      });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("transcribeWithChunking", () => {
@@ -164,7 +175,7 @@ describe("chunkedTranscription", () => {
           TEST_MIME_TYPE,
         );
         expect(transcribeImpl).toHaveBeenCalledTimes(2);
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should concatenate multiple chunk transcriptions with space separator", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
@@ -207,7 +218,7 @@ describe("chunkedTranscription", () => {
           `${TEST_TRANSCRIPTION_1} ${TEST_TRANSCRIPTION_2} ${TEST_TRANSCRIPTION_3}`,
         );
         expect(transcribeImpl).toHaveBeenCalledTimes(3);
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should pass correct chunk filenames to transcribe", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
@@ -239,7 +250,7 @@ describe("chunkedTranscription", () => {
         const calls = transcribeImpl.mock.calls;
         expect(calls[0][1]).toBe("test-audio-chunk-001.mp3");
         expect(calls[1][1]).toBe("test-audio-chunk-002.mp3");
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should generate correct chunk filenames for files without extension", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
@@ -271,7 +282,7 @@ describe("chunkedTranscription", () => {
         const calls = transcribeImpl.mock.calls;
         expect(calls[0][1]).toBe("audio-recording-chunk-001");
         expect(calls[1][1]).toBe("audio-recording-chunk-002");
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
     });
 
     describe("error handling", () => {
@@ -336,7 +347,7 @@ describe("chunkedTranscription", () => {
             "Failed to transcribe chunk 2/2",
           );
         }
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should include chunk context in error message on transcription failure", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
@@ -377,7 +388,7 @@ describe("chunkedTranscription", () => {
           expect((error as Error).message).toContain("chunk 3/3");
           expect((error as Error).message).toContain("Timeout");
         }
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should throw ChunkedTranscriptionError when direct transcription fails", async () => {
         const smallFile = createTestBlob(10 * 1024 * 1024); // 10 MB
@@ -448,7 +459,7 @@ describe("chunkedTranscription", () => {
             originalError,
           );
         }
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
     });
 
     describe("service interface compatibility", () => {
@@ -507,7 +518,7 @@ describe("chunkedTranscription", () => {
           maxFileSize,
           customMimeType,
         );
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
     });
 
     describe("edge cases", () => {
@@ -538,7 +549,7 @@ describe("chunkedTranscription", () => {
         );
 
         expect(result).toBe(" "); // Two empty strings joined by space
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
 
       it("should handle very large number of chunks", async () => {
         const maxFileSize = 10 * 1024 * 1024; // 10 MB
@@ -573,7 +584,7 @@ describe("chunkedTranscription", () => {
 
         expect(result).toBe(textResults.join(" "));
         expect(transcribeImpl).toHaveBeenCalledTimes(10);
-      });
+      }, 10000); // Slightly more time needed for 10 chunks even with mocked delays
 
       it("should handle special characters in filenames", async () => {
         const maxFileSize = 25 * 1024 * 1024; // 25 MB
@@ -605,7 +616,7 @@ describe("chunkedTranscription", () => {
         const calls = transcribeImpl.mock.calls;
         expect(calls[0][1]).toBe("meeting_2024-02-20 (draft)-chunk-001.mp3");
         expect(calls[1][1]).toBe("meeting_2024-02-20 (draft)-chunk-002.mp3");
-      });
+      }, 5000); // Fast with fake timers (delays are instant)
     });
   });
 });

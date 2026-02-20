@@ -6,6 +6,18 @@ import {
 } from "./audioChunker";
 
 /**
+ * Initial delay between chunk transcriptions in milliseconds.
+ * Helps prevent rate limiting when processing multiple chunks.
+ */
+const INITIAL_CHUNK_DELAY_MS = 1000; // 1 second
+
+/**
+ * Maximum delay for exponential backoff in milliseconds.
+ * Prevents delays from growing indefinitely on persistent rate limiting.
+ */
+const MAX_BACKOFF_DELAY_MS = 30000; // 30 seconds
+
+/**
  * Error thrown when chunked transcription fails.
  */
 export class ChunkedTranscriptionError extends Error {
@@ -16,6 +28,14 @@ export class ChunkedTranscriptionError extends Error {
     super(message);
     this.name = "ChunkedTranscriptionError";
   }
+}
+
+/**
+ * Sleeps for a specified duration.
+ * @param ms - Milliseconds to sleep
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -79,30 +99,68 @@ export async function transcribeWithChunking(
 
     console.log(`Split audio into ${chunks.length} chunks`);
 
-    // Transcribe each chunk sequentially
+    // Transcribe each chunk sequentially with backoff strategy
     const transcriptions: string[] = [];
+    let backoffDelay = INITIAL_CHUNK_DELAY_MS;
+
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const chunkNumber = i + 1;
       const chunkFileName = generateChunkFileName(fileName, chunkNumber);
 
+      // Add delay before transcribing each chunk (except the first one)
+      if (i > 0) {
+        console.log(
+          `Waiting ${backoffDelay}ms before transcribing next chunk...`,
+        );
+        await sleep(backoffDelay);
+      }
+
       console.log(
         `Transcribing chunk ${chunkNumber}/${chunks.length} (${formatBytes(chunk.size)})...`,
       );
 
-      try {
-        const transcription = await service.transcribe(
-          chunk,
-          chunkFileName,
-          mimeType,
-        );
-        transcriptions.push(transcription);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+      let lastError: Error | undefined;
+
+      // Retry with exponential backoff on rate limiting errors
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const transcription = await service.transcribe(
+            chunk,
+            chunkFileName,
+            mimeType,
+          );
+          transcriptions.push(transcription);
+          lastError = undefined;
+          break; // Success, move to next chunk
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          const errorMessage = lastError.message;
+
+          // Check if it's a rate limiting error (429)
+          if (errorMessage.includes("429")) {
+            if (attempt < 2) {
+              // Not the last attempt, apply exponential backoff
+              backoffDelay = Math.min(backoffDelay * 2, MAX_BACKOFF_DELAY_MS);
+              console.log(
+                `Rate limited on chunk ${chunkNumber}. Retrying with ${backoffDelay}ms delay (attempt ${attempt + 1}/3)...`,
+              );
+              await sleep(backoffDelay);
+              continue;
+            }
+            // Last attempt failed, will throw below
+          } else {
+            // Not a rate limiting error, don't retry
+            break;
+          }
+        }
+      }
+
+      if (lastError) {
+        const errorMessage = lastError.message;
         throw new ChunkedTranscriptionError(
           `Failed to transcribe chunk ${chunkNumber}/${chunks.length}: ${errorMessage}`,
-          error instanceof Error ? error : undefined,
+          lastError,
         );
       }
     }

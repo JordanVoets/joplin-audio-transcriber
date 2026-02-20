@@ -166,6 +166,13 @@ export async function splitAudioBlob(
     // Apply safety margin to avoid hitting exact limits due to encoding overhead
     maxChunkSize = Math.floor(maxChunkSize * SAFETY_MARGIN);
 
+    // Re-validate after applying safety margin to prevent division by zero
+    if (maxChunkSize <= 0) {
+      throw new AudioChunkingError(
+        "Maximum chunk size too small after applying safety margin. Minimum required is 2 bytes.",
+      );
+    }
+
     // If blob is smaller than max size, return as-is
     if (blob.size <= maxChunkSize) {
       return [blob];

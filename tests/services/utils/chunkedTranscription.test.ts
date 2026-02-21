@@ -52,6 +52,7 @@ describe("chunkedTranscription", () => {
   const TEST_TRANSCRIPTION_1 = "This is the first chunk";
   const TEST_TRANSCRIPTION_2 = "This is the second chunk";
   const TEST_TRANSCRIPTION_3 = "This is the third chunk";
+  const KB = 1024;
 
   // Helper to create test audio blob
   const createTestBlob = (size: number): Blob => {
@@ -85,8 +86,8 @@ describe("chunkedTranscription", () => {
   describe("transcribeWithChunking", () => {
     describe("when file is within service limit", () => {
       it("should transcribe directly without chunking", async () => {
-        const smallFile = createTestBlob(10 * 1024 * 1024); // 10 MB
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
+        const smallFile = createTestBlob(10 * KB); // 10 KB
+        const maxFileSize = 25 * KB; // 25 KB
 
         const transcribeImpl = jest
           .fn()
@@ -115,10 +116,10 @@ describe("chunkedTranscription", () => {
       });
 
       it("should transcribe directly when file is at effective limit (with safety margin)", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
+        const maxFileSize = 25 * KB; // 25 KB
         const effectiveMaxSize = Math.floor(maxFileSize * SAFETY_MARGIN);
         // Create file just under effective limit to avoid chunking
-        const fileAtEffectiveLimit = createTestBlob(effectiveMaxSize - 1024);
+        const fileAtEffectiveLimit = createTestBlob(effectiveMaxSize - 1);
 
         const transcribeImpl = jest
           .fn()
@@ -143,11 +144,11 @@ describe("chunkedTranscription", () => {
 
     describe("when file exceeds service limit", () => {
       it("should split file and transcribe chunks sequentially", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -180,12 +181,12 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should concatenate multiple chunk transcriptions with space separator", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(80 * 1024 * 1024); // 80 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(80 * KB); // 80 KB
 
-        const chunk1 = createTestBlob(25 * 1024 * 1024);
-        const chunk2 = createTestBlob(25 * 1024 * 1024);
-        const chunk3 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(25 * KB);
+        const chunk2 = createTestBlob(25 * KB);
+        const chunk3 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([
           chunk1,
@@ -223,11 +224,11 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should pass correct chunk filenames to transcribe", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -255,12 +256,12 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should generate correct chunk filenames for files without extension", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
         const fileNameNoExt = "audio-recording";
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -289,8 +290,8 @@ describe("chunkedTranscription", () => {
 
     describe("error handling", () => {
       it("should throw ChunkedTranscriptionError when splitAudioBlob fails", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
         const chunkingError = new AudioChunkingError("FFmpeg not found");
         (splitAudioBlob as jest.Mock).mockRejectedValue(chunkingError);
@@ -316,11 +317,11 @@ describe("chunkedTranscription", () => {
       });
 
       it("should throw ChunkedTranscriptionError when chunk transcription fails", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -352,12 +353,12 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should include chunk context in error message on transcription failure", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(75 * 1024 * 1024); // 75 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(75 * KB); // 75 KB
 
-        const chunk1 = createTestBlob(25 * 1024 * 1024);
-        const chunk2 = createTestBlob(25 * 1024 * 1024);
-        const chunk3 = createTestBlob(25 * 1024 * 1024);
+        const chunk1 = createTestBlob(25 * KB);
+        const chunk2 = createTestBlob(25 * KB);
+        const chunk3 = createTestBlob(25 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([
           chunk1,
@@ -393,8 +394,8 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should throw ChunkedTranscriptionError when direct transcription fails", async () => {
-        const smallFile = createTestBlob(10 * 1024 * 1024); // 10 MB
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
+        const smallFile = createTestBlob(10 * KB); // 10 KB
+        const maxFileSize = 25 * KB; // 25 KB
 
         const transcriptError = new Error("Network error");
         const transcribeImpl = jest.fn().mockRejectedValue(transcriptError);
@@ -428,11 +429,11 @@ describe("chunkedTranscription", () => {
       });
 
       it("should preserve the original error as cause", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -466,7 +467,7 @@ describe("chunkedTranscription", () => {
 
     describe("service interface compatibility", () => {
       it("should work with services that have no file size limit", async () => {
-        const smallFile = createTestBlob(100 * 1024 * 1024); // 100 MB
+        const smallFile = createTestBlob(100 * KB); // 100 KB
 
         const transcribeImpl = jest.fn().mockResolvedValue("No limit result");
 
@@ -489,12 +490,12 @@ describe("chunkedTranscription", () => {
       });
 
       it("should pass correct MIME type to splitAudioBlob", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
         const customMimeType = "audio/wav";
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -525,11 +526,11 @@ describe("chunkedTranscription", () => {
 
     describe("edge cases", () => {
       it("should handle empty transcription results", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 
@@ -554,12 +555,12 @@ describe("chunkedTranscription", () => {
       }, 5000); // Fast with fake timers (delays are instant)
 
       it("should handle very large number of chunks", async () => {
-        const maxFileSize = 10 * 1024 * 1024; // 10 MB
-        const largeFile = createTestBlob(100 * 1024 * 1024); // 100 MB (would be 10 chunks)
+        const maxFileSize = 10 * KB; // 10 KB
+        const largeFile = createTestBlob(100 * KB); // 100 KB (would be 10 chunks)
 
         const chunks = Array(10)
           .fill(null)
-          .map(() => createTestBlob(10 * 1024 * 1024));
+          .map(() => createTestBlob(10 * KB));
 
         (splitAudioBlob as jest.Mock).mockResolvedValue(chunks);
 
@@ -589,12 +590,12 @@ describe("chunkedTranscription", () => {
       }, 10000); // Slightly more time needed for 10 chunks even with mocked delays
 
       it("should handle special characters in filenames", async () => {
-        const maxFileSize = 25 * 1024 * 1024; // 25 MB
-        const largeFile = createTestBlob(60 * 1024 * 1024); // 60 MB
+        const maxFileSize = 25 * KB; // 25 KB
+        const largeFile = createTestBlob(60 * KB); // 60 KB
         const specialFileName = "meeting_2024-02-20 (draft).mp3";
 
-        const chunk1 = createTestBlob(30 * 1024 * 1024);
-        const chunk2 = createTestBlob(30 * 1024 * 1024);
+        const chunk1 = createTestBlob(30 * KB);
+        const chunk2 = createTestBlob(30 * KB);
 
         (splitAudioBlob as jest.Mock).mockResolvedValue([chunk1, chunk2]);
 

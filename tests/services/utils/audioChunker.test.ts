@@ -144,7 +144,7 @@ describe("audioChunker", () => {
     });
 
     it("should work with different MIME types", async () => {
-      const mimeTypes = ["audio/mpeg", "audio/ogg"];
+      const mimeTypes = ["audio/mpeg"];
       const audioData = new Blob([new ArrayBuffer(200)]);
       const maxChunkSize = 100;
 

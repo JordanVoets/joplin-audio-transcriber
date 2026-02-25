@@ -134,7 +134,7 @@ joplin.plugins.register({
         });
 
         joplin.views.dialogs.showToast({
-          message: `Transcription started! The result will be saved in the file "${transcriptionTitle}".`,
+          message: `Transcription started! The result will be saved in the note "${transcriptionTitle}".`,
           type: ToastType.Info,
         });
 
@@ -168,10 +168,18 @@ joplin.plugins.register({
           const result = `**Transcription:**\n\n${transcription}`;
 
           // Update the transcription note with the actual result
-          await joplin.data.put(["notes", transcriptionNote.id], null, {
+          try {
+            await joplin.data.put(["notes", transcriptionNote.id], null, {
             body: result,
+          });          
+        } catch (updateError) {
+          joplin.views.dialogs.showToast({
+            message: `Failed to update transcription note. Did you delete or move the note during transcription?`,
+            type: ToastType.Error,
           });
 
+          console.error("Failed to update transcription note:", updateError);
+        }
           joplin.views.dialogs.showToast({
             message: `Transcription complete! The result is in the note "${transcriptionTitle}".`,
             type: ToastType.Success,

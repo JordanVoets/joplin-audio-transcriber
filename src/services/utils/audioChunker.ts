@@ -179,7 +179,7 @@ export async function splitAudioBlob(
     // Re-validate after applying safety margin to prevent division by zero
     if (maxChunkSize <= 0) {
       throw new AudioChunkingError(
-        "Maximum chunk size too small after applying safety margin. Minimum required is 2 bytes.",
+        "Maximum chunk size too small after applying safety margin.",
       );
     }
 

@@ -188,8 +188,6 @@ export async function splitAudioBlob(
       return [blob];
     }
 
-    // Calculate number of chunks needed
-    const numChunks = Math.ceil(blob.size / maxChunkSize);
     const chunks: Blob[] = [];
 
     // For MP3 files, try to find frame boundaries for cleaner splits
@@ -199,20 +197,29 @@ export async function splitAudioBlob(
 
     let currentPosition = 0;
 
-    for (let i = 0; i < numChunks; i++) {
+    while (currentPosition < blob.size) {
       const start = currentPosition;
       let end = Math.min(start + maxChunkSize, blob.size);
 
       // For MP3, try to find the last frame sync before 'end' to avoid splitting mid-frame
-      // while ensuring we never exceed maxChunkSize
-      if (isMP3 && i < numChunks - 1) {
-        // Don't search on the last chunk - just take whatever is left
+      // while ensuring we never exceed maxChunkSize.
+      // Skip frame sync search for the last chunk (when end == blob.size).
+      if (isMP3 && end < blob.size) {
         const syncPos = await findLastMP3FrameSyncBefore(blob, end);
         if (syncPos !== -1 && syncPos > start) {
           // Found a frame boundary that keeps chunk within size limit
           end = syncPos;
         }
         // If no sync found, just use the byte boundary (fallback)
+      }
+
+      // Safety guard: ensure we make progress to avoid infinite loops
+      if (end <= start) {
+        throw new AudioChunkingError(
+          "Unable to chunk audio: cannot make progress at position " +
+          start +
+          " bytes. The audio may be corrupted or contain invalid frames.",
+        );
       }
 
       // Use Blob.slice() to extract chunk without loading entire file into memory

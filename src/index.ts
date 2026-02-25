@@ -1,5 +1,5 @@
 import joplin from "api";
-import { ToolbarButtonLocation, SettingItemType } from "api/types";
+import { ToolbarButtonLocation, SettingItemType, ToastType } from "api/types";
 import { TranscriptionServiceFactory } from "./services/TranscriptionServiceFactory";
 import { TranscriptionServiceConfig } from "./services/ITranscriptionService";
 import { transcribeWithChunking } from "./services/utils/chunkedTranscription";
@@ -75,16 +75,21 @@ joplin.plugins.register({
         )) as string;
 
         if (!selectedText) {
-          alert("Please select an audio file to transcribe.");
+          joplin.views.dialogs.showToast({
+            message: "Please select an audio file to transcribe.",
+            type: ToastType.Error,
+          });
           return;
         }
 
         const fileId = extractFileId(selectedText);
 
         if (fileId === null) {
-          alert(
-            "Please select a valid Joplin internal link to an audio file (e.g., [title](:/fileId)).",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please select a valid Joplin internal link to an audio file (e.g., [title](:/fileId)).",
+            type: ToastType.Error,
+          });
           return;
         }
 
@@ -95,9 +100,11 @@ joplin.plugins.register({
         const isAudioFile = file.mime?.startsWith("audio/") ?? false;
 
         if (!isAudioFile) {
-          alert(
-            "Please select a valid audio file (e.g., .mp3, .wav, .ogg, .flac, .aac).",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please select a valid audio file (e.g., .mp3, .wav, .ogg, .flac, .aac).",
+            type: ToastType.Error,
+          });
           return;
         }
 
@@ -110,9 +117,11 @@ joplin.plugins.register({
         )) as string;
 
         if (!apiKey) {
-          alert(
-            "Please configure your API key in Settings > Audio Transcriber.",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please configure your API key in Settings > Audio Transcriber.",
+            type: ToastType.Error,
+          });
           return;
         }
 

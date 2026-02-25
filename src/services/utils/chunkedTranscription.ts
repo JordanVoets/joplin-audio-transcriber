@@ -89,7 +89,7 @@ export async function transcribeWithChunking(
       let lastError: Error | undefined;
 
       for (let attempt = 0; attempt < 3; attempt++) {
-        if(attempt > 0) {
+        if (attempt > 0) {
           console.log(
             `Retrying chunk ${chunkNumber} (attempt ${attempt + 1}/3).`,
           );

@@ -205,8 +205,8 @@ export async function splitAudioBlob(
       if (end <= start) {
         throw new AudioChunkingError(
           "Unable to chunk audio: cannot make progress at position " +
-          start +
-          " bytes. The audio may be corrupted or contain invalid frames.",
+            start +
+            " bytes. The audio may be corrupted or contain invalid frames.",
         );
       }
 

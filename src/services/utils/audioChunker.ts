@@ -57,12 +57,12 @@ function findNextMP3FrameSyncInWindow(
     // MP3 frame sync is 11 bits all set: 0xFFE or 0xFFF (first nibble is F, second is E or F)
     // Check if current and next byte form a valid sync word
     if (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) {
-      // Double-check: valid MPEG sync should have MPEG version and layer bits
+      // Double-check: valid MPEG sync should have a non-reserved MPEG version and valid layer bits
       // Bits: FFFFFFFF FFF(MPEG version)(layer)(padding bit)...
       const byte2 = data[i + 1];
-      // MPEG version bits (bits 3-4) should not be 11 (invalid)
+      // MPEG version bits (bits 3-4) should not be 01 (reserved/invalid)
       // Layer bits (bits 1-2) should not be 00 (invalid)
-      if ((byte2 & 0x18) !== 0x18 && (byte2 & 0x06) !== 0) {
+      if ((byte2 & 0x18) !== 0x08 && (byte2 & 0x06) !== 0) {
         return i;
       }
     }

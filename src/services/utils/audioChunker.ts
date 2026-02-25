@@ -7,15 +7,12 @@ export const SAFETY_MARGIN = 0.93;
 
 /**
  * Supported audio MIME types for chunking.
- * Only MP3 and WAV formats are supported as they can reliably resynchronize
+ * Only MP3 format is supported as MP3 can reliably resynchronize
  * at arbitrary byte boundaries.
  */
 const SUPPORTED_MIME_TYPES = [
   "audio/mpeg",
   "audio/mp3",
-  "audio/wav",
-  "audio/wave",
-  "audio/x-wav",
 ];
 
 /**

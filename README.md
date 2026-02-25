@@ -68,61 +68,18 @@ After installation, configure the plugin in Joplin settings:
 
 ## Development
 
-### Prerequisites
+Interested in contributing? Start with the [CONTRIBUTING.md](CONTRIBUTING.md) guide.
 
-- Node.js and npm
-- TypeScript knowledge (the plugin is written in TypeScript)
+For advanced topics like architecture and adding new transcription services, see the [project wiki](https://github.com/JordanVoets/joplin-audio-transcriber/wiki).
 
-### Building
-
-```bash
-npm install
-npm run dist
-```
-
-### Linting
-
-To lint and format the code:
+### Quick Start
 
 ```bash
-npm run lint
+npm install      # Install dependencies
+npm run dist     # Build the plugin
+npm test         # Run tests
+npm run lint     # Format and lint code
 ```
-
-This command runs ESLint with auto-fix and Prettier to format all files according to the project's code style.
-
-### Testing
-
-The project uses Jest for unit and integration testing with full TypeScript support.
-
-**Run all tests:**
-
-```bash
-npm test
-```
-
-**Run tests in watch mode** (useful during development):
-
-```bash
-npm run test:watch
-```
-
-### Project Structure
-
-```
-src/
-├── index.ts                           # Plugin entry point
-├── manifest.json                      # Plugin metadata
-└── services/
-    ├── ITranscriptionService.ts       # Service interface
-    ├── TranscriptionServiceFactory.ts # Factory for creating services
-    ├── ServiceRegistry.ts             # Registry of available services
-    ├── OpenAITranscriptionService.ts  # OpenAI implementation
-    └── GeminiTranscriptionService.ts  # Google Gemini implementation
-```
-
-### Adding a New Transcription Service
-
-See the [Adding New Services](./wiki/Adding-New-Services.md) guide in the project wiki for detailed instructions on extending the plugin with new transcription providers.
 
 ## Troubleshooting
 
@@ -153,4 +110,4 @@ MIT © Jordan Voets
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests on the [GitHub repository](https://github.com/JordanVoets/joplin-audio-transcriber).
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.

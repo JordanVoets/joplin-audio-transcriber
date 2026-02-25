@@ -6,18 +6,6 @@ import {
 } from "./audioChunker";
 
 /**
- * Initial delay between chunk transcriptions in milliseconds.
- * Helps prevent rate limiting when processing multiple chunks.
- */
-const INITIAL_CHUNK_DELAY_MS = 1000; // 1 second
-
-/**
- * Maximum delay for exponential backoff in milliseconds.
- * Prevents delays from growing indefinitely on persistent rate limiting.
- */
-const MAX_BACKOFF_DELAY_MS = 30000; // 30 seconds
-
-/**
  * Error thrown when chunked transcription fails.
  */
 export class ChunkedTranscriptionError extends Error {
@@ -28,14 +16,6 @@ export class ChunkedTranscriptionError extends Error {
     super(message);
     this.name = "ChunkedTranscriptionError";
   }
-}
-
-/**
- * Sleeps for a specified duration.
- * @param ms - Milliseconds to sleep
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -126,7 +106,6 @@ export async function transcribeWithChunking(
           break; // Success, move to next chunk
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          const errorMessage = lastError.message;
         }
       }
 

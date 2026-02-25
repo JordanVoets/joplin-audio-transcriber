@@ -1,5 +1,5 @@
 import joplin from "api";
-import { ToolbarButtonLocation, SettingItemType } from "api/types";
+import { ToolbarButtonLocation, SettingItemType, ToastType } from "api/types";
 import { TranscriptionServiceFactory } from "./services/TranscriptionServiceFactory";
 import { TranscriptionServiceConfig } from "./services/ITranscriptionService";
 import { transcribeWithChunking } from "./services/utils/chunkedTranscription";
@@ -75,16 +75,21 @@ joplin.plugins.register({
         )) as string;
 
         if (!selectedText) {
-          alert("Please select an audio file to transcribe.");
+          joplin.views.dialogs.showToast({
+            message: "Please select an audio file to transcribe.",
+            type: ToastType.Error,
+          });
           return;
         }
 
         const fileId = extractFileId(selectedText);
 
         if (fileId === null) {
-          alert(
-            "Please select a valid Joplin internal link to an audio file (e.g., [title](:/fileId)).",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please select a valid Joplin internal link to an audio file (e.g., [title](:/fileId)).",
+            type: ToastType.Error,
+          });
           return;
         }
 
@@ -95,9 +100,11 @@ joplin.plugins.register({
         const isAudioFile = file.mime?.startsWith("audio/") ?? false;
 
         if (!isAudioFile) {
-          alert(
-            "Please select a valid audio file (e.g., .mp3, .wav, .ogg, .flac, .aac).",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please select a valid audio file (e.g., .mp3, .wav, .ogg, .flac, .aac).",
+            type: ToastType.Error,
+          });
           return;
         }
 
@@ -110,14 +117,26 @@ joplin.plugins.register({
         )) as string;
 
         if (!apiKey) {
-          alert(
-            "Please configure your API key in Settings > Audio Transcriber.",
-          );
+          joplin.views.dialogs.showToast({
+            message:
+              "Please configure your API key in Settings > Audio Transcriber.",
+            type: ToastType.Error,
+          });
           return;
         }
 
-        // ToDo: Replace with some kinda progress indicator UI
-        alert(`Transcribing audio: ${file.title} (ID: ${file.id})`);
+        const transcriptionTitle = `Transcription of ${file.title}`;
+        const placeholderBody = "Transcription in progress...";
+
+        const transcriptionNote = await joplin.data.post(["notes"], null, {
+          body: placeholderBody,
+          title: transcriptionTitle,
+        });
+
+        joplin.views.dialogs.showToast({
+          message: `Transcription started! The result will be saved in the note "${transcriptionTitle}".`,
+          type: ToastType.Info,
+        });
 
         try {
           const fileData = await joplin.data.get(["resources", fileId, "file"]);
@@ -148,13 +167,33 @@ joplin.plugins.register({
 
           const result = `**Transcription:**\n\n${transcription}`;
 
-          await joplin.commands.execute(
-            "insertText",
-            `${selectedText}\n\n${result}`,
-          );
+          // Update the transcription note with the actual result
+          try {
+            await joplin.data.put(["notes", transcriptionNote.id], null, {
+              body: result,
+            });
+          } catch (updateError) {
+            joplin.views.dialogs.showToast({
+              message: `Failed to update transcription note. Did you delete or move the note during transcription?`,
+              type: ToastType.Error,
+            });
+
+            console.error("Failed to update transcription note:", updateError);
+          }
+          joplin.views.dialogs.showToast({
+            message: `Transcription complete! The result is in the note "${transcriptionTitle}".`,
+            type: ToastType.Success,
+          });
         } catch (error) {
           console.error("Transcription error:", error);
-          alert(`Transcription failed: ${error.message}`);
+          joplin.views.dialogs.showToast({
+            message: `Transcription failed: ${error.message}`,
+            type: ToastType.Error,
+          });
+          // Update the note with error message
+          await joplin.data.put(["notes", transcriptionNote.id], null, {
+            body: `Transcription failed: ${error.message}`,
+          });
         }
       },
     });

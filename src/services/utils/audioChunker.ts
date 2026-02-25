@@ -10,10 +10,7 @@ export const SAFETY_MARGIN = 0.93;
  * Only MP3 format is supported as MP3 can reliably resynchronize
  * at arbitrary byte boundaries.
  */
-const SUPPORTED_MIME_TYPES = [
-  "audio/mpeg",
-  "audio/mp3",
-];
+const SUPPORTED_MIME_TYPES = ["audio/mpeg", "audio/mp3"];
 
 /**
  * Custom error, thrown when audio chunking fails.

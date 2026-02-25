@@ -170,16 +170,16 @@ joplin.plugins.register({
           // Update the transcription note with the actual result
           try {
             await joplin.data.put(["notes", transcriptionNote.id], null, {
-            body: result,
-          });          
-        } catch (updateError) {
-          joplin.views.dialogs.showToast({
-            message: `Failed to update transcription note. Did you delete or move the note during transcription?`,
-            type: ToastType.Error,
-          });
+              body: result,
+            });
+          } catch (updateError) {
+            joplin.views.dialogs.showToast({
+              message: `Failed to update transcription note. Did you delete or move the note during transcription?`,
+              type: ToastType.Error,
+            });
 
-          console.error("Failed to update transcription note:", updateError);
-        }
+            console.error("Failed to update transcription note:", updateError);
+          }
           joplin.views.dialogs.showToast({
             message: `Transcription complete! The result is in the note "${transcriptionTitle}".`,
             type: ToastType.Success,

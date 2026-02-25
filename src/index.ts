@@ -125,8 +125,18 @@ joplin.plugins.register({
           return;
         }
 
-        // ToDo: Replace with some kinda progress indicator UI
-        alert(`Transcribing audio: ${file.title} (ID: ${file.id})`);
+        const transcriptionTitle = `Transcription of ${file.title}`;
+        const placeholderBody = "Transcription in progress...";
+
+        const transcriptionNote = await joplin.data.post(["notes"], null, {
+            body: placeholderBody,
+            title: transcriptionTitle,
+          });
+
+        joplin.views.dialogs.showToast({
+          message: `Transcription started! The result will be saved in the file "${transcriptionTitle}".`,
+          type: ToastType.Info,
+        });
 
         try {
           const fileData = await joplin.data.get(["resources", fileId, "file"]);
@@ -157,13 +167,25 @@ joplin.plugins.register({
 
           const result = `**Transcription:**\n\n${transcription}`;
 
-          await joplin.commands.execute(
-            "insertText",
-            `${selectedText}\n\n${result}`,
-          );
+          // Update the transcription note with the actual result
+          await joplin.data.put(["notes", transcriptionNote.id], null, {
+            body: result,
+          });
+          
+          joplin.views.dialogs.showToast({
+            message: `Transcription complete! The result is in the note "${transcriptionTitle}".`,
+            type: ToastType.Info,
+          });
         } catch (error) {
           console.error("Transcription error:", error);
-          alert(`Transcription failed: ${error.message}`);
+          joplin.views.dialogs.showToast({
+            message: `Transcription failed: ${error.message}`,
+            type: ToastType.Error,
+          });
+          // Update the note with error message
+          await joplin.data.put(["notes", transcriptionNote.id], null, {
+            body: `Transcription failed: ${error.message}`,
+          });
         }
       },
     });

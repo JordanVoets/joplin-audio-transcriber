@@ -1,0 +1,235 @@
+/**
+ * Safety margin (93%) applied to service file size limits to account for
+ * multipart/form-data and base64 encoding overhead.
+ * This 7% reduction helps prevent 413 errors when files are just under the limit.
+ */
+export const SAFETY_MARGIN = 0.93;
+
+/**
+ * Supported audio MIME types for chunking.
+ * Only MP3 format is supported as MP3 can reliably resynchronize
+ * at arbitrary byte boundaries.
+ */
+const SUPPORTED_MIME_TYPES = ["audio/mpeg", "audio/mp3"];
+
+/**
+ * Custom error, thrown when audio chunking fails.
+ */
+export class AudioChunkingError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+  ) {
+    super(message);
+    this.name = "AudioChunkingError";
+  }
+}
+
+/**
+ * Validates if the audio format is supported for chunking.
+ * @param mimeType - The MIME type to validate
+ * @returns True if the format is supported
+ */
+function isSupportedFormat(mimeType: string): boolean {
+  const normalized = mimeType.toLowerCase();
+  return SUPPORTED_MIME_TYPES.includes(normalized);
+}
+
+/**
+ * Finds the next MP3 frame sync marker (0xFFE or 0xFFF) in a data buffer.
+ * MP3 frames start with an 11-bit sync word (all bits set: 0xFFE or 0xFFF).
+ * This allows splitting at frame boundaries instead of arbitrary byte positions.
+ *
+ * @param data - The audio data window as Uint8Array
+ * @param startOffset - Offset to start searching from within the data window
+ * @returns Position within the data window of the next frame sync marker, or -1 if not found
+ */
+function findNextMP3FrameSyncInWindow(
+  data: Uint8Array,
+  startOffset: number = 0,
+): number {
+  const maxPos = data.length - 2; // Need at least 2 bytes for sync check
+
+  for (let i = startOffset; i < maxPos; i++) {
+    // MP3 frame sync is 11 bits all set: 0xFFE or 0xFFF (first nibble is F, second is E or F)
+    // Check if current and next byte form a valid sync word
+    if (data[i] === 0xff && (data[i + 1] & 0xe0) === 0xe0) {
+      // Double-check: valid MPEG sync should have a non-reserved MPEG version and valid layer bits
+      // Bits: FFFFFFFF FFF(MPEG version)(layer)(padding bit)...
+      const byte2 = data[i + 1];
+      // MPEG version bits (bits 3-4) should not be 01 (reserved/invalid)
+      // Layer bits (bits 1-2) should not be 00 (invalid)
+      if ((byte2 & 0x18) !== 0x08 && (byte2 & 0x06) !== 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Finds the last MP3 frame sync marker before a given position by reading backwards.
+ * This ensures we never exceed the maximum chunk size when splitting at frame boundaries.
+ *
+ * @param blob - The audio blob to search
+ * @param position - Byte position in the blob to search up to (exclusive)
+ * @param searchLimit - Maximum distance to search backwards (for performance)
+ * @returns Absolute position in the blob of the last frame sync marker before position, or -1 if not found
+ */
+async function findLastMP3FrameSyncBefore(
+  blob: Blob,
+  position: number,
+  searchLimit: number = 64 * 1024, // Search up to 64KB backwards
+): Promise<number> {
+  const searchStart = Math.max(0, position - searchLimit);
+  const windowSize = position - searchStart;
+
+  if (windowSize < 2) {
+    // Not enough data to find a sync marker
+    return -1;
+  }
+
+  // Read only a small window of data for scanning
+  const window = blob.slice(searchStart, position);
+  const buffer = await window.arrayBuffer();
+  const data = new Uint8Array(buffer);
+
+  // Find all syncs in the window and return the last one
+  let lastSyncPos = -1;
+  let currentOffset = 0;
+
+  while (currentOffset < data.length - 2) {
+    const syncPos = findNextMP3FrameSyncInWindow(data, currentOffset);
+    if (syncPos === -1) {
+      break;
+    }
+    lastSyncPos = syncPos;
+    currentOffset = syncPos + 1; // Continue searching after this sync
+  }
+
+  if (lastSyncPos === -1) {
+    return -1;
+  }
+
+  // Convert relative position to absolute position in blob
+  return searchStart + lastSyncPos;
+}
+
+/**
+ * Splits an audio blob into smaller chunks.
+ * Only MP3 and WAV formats are supported as they can reliably resynchronize
+ * at arbitrary byte boundaries.
+ *
+ * This approach:
+ * - Uses byte-based splitting for WAV files
+ * - Attempts to find MP3 frame boundaries for cleaner splits
+ * - Works without requiring FFmpeg or other external dependencies
+ * - Is suitable for Joplin plugin environment
+ *
+ * @param blob - The original audio blob to split
+ * @param maxChunkSize - Maximum size in bytes for each chunk
+ * @param mimeType - MIME type of the audio file (must be 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', or 'audio/x-wav')
+ * @returns Array of audio blobs, each with the specified MIME type
+ *
+ * @throws {AudioChunkingError} If chunking parameters are invalid or format is unsupported
+ */
+export async function splitAudioBlob(
+  blob: Blob,
+  maxChunkSize: number,
+  mimeType: string,
+): Promise<Blob[]> {
+  try {
+    // Validate format is supported
+    if (!isSupportedFormat(mimeType)) {
+      throw new AudioChunkingError(
+        `Unsupported audio format: ${mimeType}. Only MP3 and WAV formats are supported for chunking. Please convert your file to one of these formats.`,
+      );
+    }
+
+    // Validate inputs
+    if (maxChunkSize <= 0) {
+      throw new AudioChunkingError("Maximum chunk size must be greater than 0");
+    }
+
+    if (blob.size === 0) {
+      throw new AudioChunkingError("Cannot chunk empty blob");
+    }
+
+    // Apply safety margin to avoid hitting exact limits due to encoding overhead
+    maxChunkSize = Math.floor(maxChunkSize * SAFETY_MARGIN);
+
+    // Re-validate after applying safety margin to prevent division by zero
+    if (maxChunkSize <= 0) {
+      throw new AudioChunkingError(
+        "Maximum chunk size too small after applying safety margin.",
+      );
+    }
+
+    // If the file is already within the effective chunk size limit, return it as a single chunk
+    if (blob.size <= maxChunkSize) {
+      return [blob];
+    }
+
+    const chunks: Blob[] = [];
+
+    const isMP3 =
+      mimeType.toLowerCase().includes("mpeg") ||
+      mimeType.toLowerCase().includes("mp3");
+
+    let currentPosition = 0;
+
+    while (currentPosition < blob.size) {
+      const start = currentPosition;
+      let end = Math.min(start + maxChunkSize, blob.size);
+
+      // For MP3, try to find the last frame sync before 'end' to avoid splitting mid-frame
+      // while ensuring we never exceed maxChunkSize.
+      // Skip frame sync search for the last chunk (when end == blob.size).
+      if (isMP3 && end < blob.size) {
+        const syncPos = await findLastMP3FrameSyncBefore(blob, end);
+        if (syncPos !== -1 && syncPos > start) {
+          // Found a frame boundary that keeps chunk within size limit
+          end = syncPos;
+        }
+        // If no sync found, just use the byte boundary (fallback)
+      }
+
+      // Safety guard: ensure we make progress to avoid infinite loops
+      if (end <= start) {
+        throw new AudioChunkingError(
+          "Unable to chunk audio: cannot make progress at position " +
+            start +
+            " bytes. The audio may be corrupted or contain invalid frames.",
+        );
+      }
+
+      // Use Blob.slice() to extract chunk without loading entire file into memory
+      const chunk = blob.slice(start, end, mimeType);
+      chunks.push(chunk);
+
+      // Update position for next chunk
+      currentPosition = end;
+    }
+
+    return chunks;
+  } catch (error) {
+    if (error instanceof AudioChunkingError) {
+      throw error;
+    }
+    throw new AudioChunkingError(
+      `Audio chunking failed: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error : undefined,
+    );
+  }
+}
+
+/**
+ * Checks if a file needs to be chunked based on size.
+ * @param fileSize - Size of the file in bytes
+ * @param maxSize - Maximum allowed size in bytes
+ * @returns True if the file needs chunking
+ */
+export function needsChunking(fileSize: number, maxSize: number): boolean {
+  return fileSize > maxSize;
+}

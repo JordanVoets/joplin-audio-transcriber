@@ -32,9 +32,6 @@ export const SERVICES: Record<string, ServiceRegistration> = {
   // Add new services here...
 };
 
-/**
- * Get all available service providers.
- */
 export function getAvailableProviders(): string[] {
   return Object.keys(SERVICES);
 }

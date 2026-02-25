@@ -38,4 +38,9 @@ export class OpenAITranscriptionService implements ITranscriptionService {
     const response = await this.connector.send(request);
     return response.data;
   }
+
+  getMaxFileSize(): number {
+    // OpenAI Whisper API has a maximum file size of 25MB
+    return 25 * 1024 * 1024;
+  }
 }

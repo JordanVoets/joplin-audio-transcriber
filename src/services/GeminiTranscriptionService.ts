@@ -26,7 +26,6 @@ export class GeminiTranscriptionService implements ITranscriptionService {
     _fileName: string,
     mimeType: string,
   ): Promise<string> {
-    // Convert Blob to base64
     const base64Audio = await this.blobToBase64(audioData);
 
     const model = this.config.model || "gemini-2.0-flash";
@@ -55,5 +54,12 @@ export class GeminiTranscriptionService implements ITranscriptionService {
       reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsDataURL(blob);
     });
+  }
+
+  getMaxFileSize(): number {
+    // Gemini API has a 100MB limit for base64-encoded payloads.
+    // Since base64 encoding increases size by ~33%, we limit the
+    // original file to ~75MB to stay within the API constraint.
+    return 75 * 1024 * 1024; // 75 MB
   }
 }

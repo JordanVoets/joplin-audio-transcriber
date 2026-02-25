@@ -73,37 +73,29 @@ export abstract class Connector {
     request: Request<TResponse>,
   ): Promise<Response<TResponse>> {
     try {
-      // Build the initial request config
       let config = await request.buildConfig();
 
-      // Merge with default headers
       config.headers = {
         ...this.defaultHeaders(),
         ...config.headers,
       };
 
-      // Apply authentication
       if (this.authHandler) {
         config = await this.authHandler.apply(config);
       }
 
-      // Apply middlewares
       for (const middleware of this.middlewares) {
         config = await middleware(config);
       }
 
-      // Execute the request
       let response = await this.executeRequest<TResponse>(config);
 
-      // Apply response interceptors
       for (const interceptor of this.responseInterceptors) {
         response = await interceptor(response);
       }
 
-      // Let the request handle the response
       return await request.handleResponse(response);
     } catch (error) {
-      // Apply error handlers
       if (error instanceof HttpError) {
         for (const handler of this.errorHandlers) {
           await handler(error);
@@ -122,14 +114,12 @@ export abstract class Connector {
   ): Promise<Response<TResponse>> {
     const url = new URL(config.endpoint, this.baseUrl());
 
-    // Add query parameters
     if (config.query) {
       Object.entries(config.query).forEach(([key, value]) => {
         url.searchParams.append(key, String(value));
       });
     }
 
-    // Prepare fetch options
     const options: RequestInit = {
       method: config.method,
       headers: config.headers,
@@ -150,10 +140,8 @@ export abstract class Connector {
       }
     }
 
-    // Execute the request
     const fetchResponse = await fetch(url.toString(), options);
 
-    // Parse response
     const contentType = fetchResponse.headers.get("content-type") || "";
     let data: TResponse;
 
@@ -165,7 +153,6 @@ export abstract class Connector {
       data = (await fetchResponse.blob()) as TResponse;
     }
 
-    // Convert headers to object
     const headers: Record<string, string> = {};
     fetchResponse.headers.forEach((value, key) => {
       headers[key] = value;
@@ -179,7 +166,6 @@ export abstract class Connector {
       ok: fetchResponse.ok,
     };
 
-    // Throw error for non-ok responses
     if (!response.ok) {
       throw new HttpError(
         `HTTP ${response.status}: ${response.statusText}`,

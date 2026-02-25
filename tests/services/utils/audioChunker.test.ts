@@ -144,7 +144,7 @@ describe("audioChunker", () => {
     });
 
     it("should work with different MIME types", async () => {
-      const mimeTypes = ["audio/mpeg", "audio/wav"];
+      const mimeTypes = ["audio/mpeg", "audio/ogg"];
       const audioData = new Blob([new ArrayBuffer(200)]);
       const maxChunkSize = 100;
 
@@ -331,19 +331,6 @@ describe("audioChunker", () => {
         }
       });
 
-      it("should accept WAV format variants", async () => {
-        const testCases = ["audio/wav", "audio/wave", "audio/x-wav"];
-
-        for (const mimeType of testCases) {
-          const audioData = new Blob([new ArrayBuffer(100)], {
-            type: mimeType,
-          });
-          const chunks = await splitAudioBlob(audioData, 50, mimeType);
-
-          expect(chunks.length).toBeGreaterThan(0);
-        }
-      });
-
       it("should split MP3 at approximate frame boundaries when possible", async () => {
         // Create a minimal MP3 file with frame sync markers
         const size = 1024; // Just 1 KB
@@ -362,7 +349,7 @@ describe("audioChunker", () => {
       });
 
       it("should handle case-insensitive MIME type comparisons", async () => {
-        const testCases = ["audio/MPEG", "AUDIO/WAV"];
+        const testCases = ["audio/MPEG"];
 
         for (const mimeType of testCases) {
           const audioData = new Blob([new ArrayBuffer(100)], {

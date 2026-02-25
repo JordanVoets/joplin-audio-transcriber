@@ -4,10 +4,8 @@
  * This module provides a clean, object-oriented way to interact with external APIs.
  */
 
-// Core classes
 export { Connector, Request } from "./Connector";
 
-// Types
 export {
   HttpMethod,
   RequestConfig,
@@ -19,7 +17,6 @@ export {
   AuthHandler,
 } from "./types";
 
-// Authentication handlers
 export {
   BearerTokenAuth,
   ApiKeyAuth,
@@ -28,7 +25,6 @@ export {
   QueryParamAuth,
 } from "./auth";
 
-// Middleware and interceptors
 export {
   loggingMiddleware,
   timeoutMiddleware,
@@ -40,7 +36,6 @@ export {
   retryErrorHandler,
 } from "./middleware";
 
-// Response handlers
 export {
   ResponseHandler,
   JsonResponseHandler,

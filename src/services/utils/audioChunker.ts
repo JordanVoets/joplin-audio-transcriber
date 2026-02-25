@@ -19,7 +19,7 @@ const SUPPORTED_MIME_TYPES = [
 ];
 
 /**
- * Error thrown when audio chunking fails.
+ * Custom error, thrown when audio chunking fails.
  */
 export class AudioChunkingError extends Error {
   constructor(
@@ -88,7 +88,6 @@ async function findLastMP3FrameSyncBefore(
   position: number,
   searchLimit: number = 64 * 1024, // Search up to 64KB backwards
 ): Promise<number> {
-  // Search from position - searchLimit to position
   const searchStart = Math.max(0, position - searchLimit);
   const windowSize = position - searchStart;
 
@@ -140,16 +139,6 @@ async function findLastMP3FrameSyncBefore(
  * @returns Array of audio blobs, each with the specified MIME type
  *
  * @throws {AudioChunkingError} If chunking parameters are invalid or format is unsupported
- *
- * @example
- * ```typescript
- * const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
- * const chunks = await splitAudioBlob(audioBlob, 25 * 1024 * 1024, 'audio/mpeg');
- * // Process each chunk separately
- * for (const chunk of chunks) {
- *   await processChunk(chunk);
- * }
- * ```
  */
 export async function splitAudioBlob(
   blob: Blob,
@@ -183,14 +172,13 @@ export async function splitAudioBlob(
       );
     }
 
-    // If blob is smaller than max size, return as-is
+    // If the file is already within the effective chunk size limit, return it as a single chunk
     if (blob.size <= maxChunkSize) {
       return [blob];
     }
 
     const chunks: Blob[] = [];
 
-    // For MP3 files, try to find frame boundaries for cleaner splits
     const isMP3 =
       mimeType.toLowerCase().includes("mpeg") ||
       mimeType.toLowerCase().includes("mp3");

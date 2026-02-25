@@ -65,12 +65,10 @@ export async function transcribeWithChunking(
   mimeType: string,
 ): Promise<string> {
   try {
-    // Check if service has a file size limit
     const maxFileSize = service.getMaxFileSize();
     // Apply safety margin to account for multipart/base64 encoding overhead
     const effectiveMaxSize = Math.floor(maxFileSize * SAFETY_MARGIN);
 
-    // If file is within the effective limit (with safety margin), transcribe directly
     if (audioData.size <= effectiveMaxSize) {
       console.log(
         `File size (${formatBytes(audioData.size)}) is within service limit (${formatBytes(maxFileSize)}, effective: ${formatBytes(effectiveMaxSize)}). Transcribing directly...`,
@@ -78,12 +76,10 @@ export async function transcribeWithChunking(
       return await service.transcribe(audioData, fileName, mimeType);
     }
 
-    // File exceeds effective limit - needs chunking
     console.log(
       `File size (${formatBytes(audioData.size)}) exceeds effective limit (${formatBytes(effectiveMaxSize)}). Splitting into chunks...`,
     );
 
-    // Split audio into chunks
     let chunks: Blob[];
     try {
       chunks = await splitAudioBlob(audioData, maxFileSize, mimeType);
@@ -99,7 +95,6 @@ export async function transcribeWithChunking(
 
     console.log(`Split audio into ${chunks.length} chunks`);
 
-    // Transcribe each chunk sequentially with backoff strategy
     const transcriptions: string[] = [];
     let backoffDelay = INITIAL_CHUNK_DELAY_MS;
 
@@ -122,7 +117,6 @@ export async function transcribeWithChunking(
 
       let lastError: Error | undefined;
 
-      // Retry with exponential backoff on rate limiting errors
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const transcription = await service.transcribe(
@@ -165,7 +159,6 @@ export async function transcribeWithChunking(
       }
     }
 
-    // Concatenate all transcriptions with a single space separator
     const fullTranscription = transcriptions.join(" ");
 
     console.log(

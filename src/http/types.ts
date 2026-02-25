@@ -1,6 +1,3 @@
-/**
- * HTTP method types
- */
 export enum HttpMethod {
   GET = "GET",
   POST = "POST",
@@ -11,9 +8,6 @@ export enum HttpMethod {
   OPTIONS = "OPTIONS",
 }
 
-/**
- * HTTP request configuration
- */
 export interface RequestConfig {
   method: HttpMethod;
   endpoint: string;
@@ -22,9 +16,6 @@ export interface RequestConfig {
   body?: unknown;
 }
 
-/**
- * HTTP response wrapper
- */
 export interface Response<T = unknown> {
   status: number;
   statusText: string;
@@ -49,9 +40,6 @@ export type ResponseInterceptor = <T>(
   response: Response<T>,
 ) => Response<T> | Promise<Response<T>>;
 
-/**
- * Error handler function type
- */
 export type ErrorHandler = (error: HttpError) => void | Promise<void>;
 
 /**
@@ -68,9 +56,6 @@ export class HttpError extends Error {
   }
 }
 
-/**
- * Authentication handler interface
- */
 export interface AuthHandler {
   apply(config: RequestConfig): RequestConfig | Promise<RequestConfig>;
 }

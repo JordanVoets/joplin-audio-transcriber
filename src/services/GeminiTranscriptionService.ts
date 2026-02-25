@@ -26,7 +26,6 @@ export class GeminiTranscriptionService implements ITranscriptionService {
     _fileName: string,
     mimeType: string,
   ): Promise<string> {
-    // Convert Blob to base64
     const base64Audio = await this.blobToBase64(audioData);
 
     const model = this.config.model || "gemini-2.0-flash";

@@ -8,7 +8,6 @@ joplin.plugins.register({
   onStart: async function () {
     console.info("Joplin Audio Transcriber plugin started!");
 
-    // Register settings
     await joplin.settings.registerSection("audioTranscriberSettings", {
       label: "Audio Transcriber",
       iconName: "fas fa-closed-captioning",
@@ -102,7 +101,6 @@ joplin.plugins.register({
           return;
         }
 
-        // Get settings
         const provider = (await joplin.settings.value("provider")) as string;
         const apiKey = (await joplin.settings.value("apiKey")) as string;
         const model = (await joplin.settings.value("model")) as string;
@@ -122,16 +120,13 @@ joplin.plugins.register({
         alert(`Transcribing audio: ${file.title} (ID: ${file.id})`);
 
         try {
-          // Get the audio file data
           const fileData = await joplin.data.get(["resources", fileId, "file"]);
 
           const body = fileData.body;
           const buffer = Buffer.from(body);
 
-          // Convert the file data to a Blob
           const blob = new Blob([buffer], { type: file.mime });
 
-          // Create configuration for the service
           const config: TranscriptionServiceConfig = {
             apiKey,
             model: model || undefined,
@@ -139,13 +134,11 @@ joplin.plugins.register({
             customPrompt: customPrompt || undefined,
           };
 
-          // Create the appropriate transcription service using the factory
           const transcriptionService = TranscriptionServiceFactory.create(
             provider,
             config,
           );
 
-          // Transcribe with automatic chunking for large files
           const transcription = await transcribeWithChunking(
             transcriptionService,
             blob,

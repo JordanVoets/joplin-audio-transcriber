@@ -171,10 +171,10 @@ joplin.plugins.register({
           await joplin.data.put(["notes", transcriptionNote.id], null, {
             body: result,
           });
-          
+
           joplin.views.dialogs.showToast({
             message: `Transcription complete! The result is in the note "${transcriptionTitle}".`,
-            type: ToastType.Info,
+            type: ToastType.Success,
           });
         } catch (error) {
           console.error("Transcription error:", error);

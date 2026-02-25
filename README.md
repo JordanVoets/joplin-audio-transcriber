@@ -72,7 +72,7 @@ Interested in contributing? Start with the [CONTRIBUTING.md](CONTRIBUTING.md) gu
 
 - Development environment setup
 - Coding standards and conventions
-- Testing procedures  
+- Testing procedures
 - Pull request process
 
 For advanced topics like architecture and adding new transcription services, see the [project wiki](https://github.com/JordanVoets/joplin-audio-transcriber/wiki).

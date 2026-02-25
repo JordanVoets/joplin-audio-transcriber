@@ -29,6 +29,7 @@ This runs ESLint and Prettier to enforce consistent style. For detailed coding s
 This project follows specific conventions for commit messages and branch names. For detailed guidelines, see the [Git Conventions](https://github.com/JordanVoets/joplin-audio-transcriber/wiki/Git-Conventions) page in the wiki.
 
 **Quick reference:**
+
 - **Commit messages**: `<type>: Capitalized description` (types: `feat`, `bug`, `docs`, `style`, `refactor`, `test`, `chore`)
 - **Branch names**: `<type>/<short-description>` using lowercase with hyphens
 

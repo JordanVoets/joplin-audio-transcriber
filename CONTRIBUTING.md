@@ -2,10 +2,6 @@
 
 Thank you for your interest in contributing to the Joplin Audio Transcriber plugin! We welcome contributions of all kinds, including bug reports, feature requests, documentation improvements, and code changes.
 
-## Code of Conduct
-
-This project follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code. Please report unacceptable behavior by opening an issue.
-
 ## Getting Started
 
 See the [Development section in the README](README.md#development) for detailed setup instructions, including:

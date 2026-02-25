@@ -129,9 +129,9 @@ joplin.plugins.register({
         const placeholderBody = "Transcription in progress...";
 
         const transcriptionNote = await joplin.data.post(["notes"], null, {
-            body: placeholderBody,
-            title: transcriptionTitle,
-          });
+          body: placeholderBody,
+          title: transcriptionTitle,
+        });
 
         joplin.views.dialogs.showToast({
           message: `Transcription started! The result will be saved in the file "${transcriptionTitle}".`,

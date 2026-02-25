@@ -96,20 +96,11 @@ export async function transcribeWithChunking(
     console.log(`Split audio into ${chunks.length} chunks`);
 
     const transcriptions: string[] = [];
-    let backoffDelay = INITIAL_CHUNK_DELAY_MS;
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const chunkNumber = i + 1;
       const chunkFileName = generateChunkFileName(fileName, chunkNumber);
-
-      // Add delay before transcribing each chunk (except the first one)
-      if (i > 0) {
-        console.log(
-          `Waiting ${backoffDelay}ms before transcribing next chunk...`,
-        );
-        await sleep(backoffDelay);
-      }
 
       console.log(
         `Transcribing chunk ${chunkNumber}/${chunks.length} (${formatBytes(chunk.size)})...`,
@@ -118,6 +109,12 @@ export async function transcribeWithChunking(
       let lastError: Error | undefined;
 
       for (let attempt = 0; attempt < 3; attempt++) {
+        if(attempt > 0) {
+          console.log(
+            `Retrying chunk ${chunkNumber} (attempt ${attempt + 1}/3).`,
+          );
+        }
+
         try {
           const transcription = await service.transcribe(
             chunk,
@@ -130,23 +127,6 @@ export async function transcribeWithChunking(
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           const errorMessage = lastError.message;
-
-          // Check if it's a rate limiting error (429)
-          if (errorMessage.includes("429")) {
-            if (attempt < 2) {
-              // Not the last attempt, apply exponential backoff
-              backoffDelay = Math.min(backoffDelay * 2, MAX_BACKOFF_DELAY_MS);
-              console.log(
-                `Rate limited on chunk ${chunkNumber}. Retrying with ${backoffDelay}ms delay (attempt ${attempt + 1}/3)...`,
-              );
-              await sleep(backoffDelay);
-              continue;
-            }
-            // Last attempt failed, will throw below
-          } else {
-            // Not a rate limiting error, don't retry
-            break;
-          }
         }
       }
 

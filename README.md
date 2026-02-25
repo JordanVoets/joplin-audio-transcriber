@@ -68,12 +68,7 @@ After installation, configure the plugin in Joplin settings:
 
 ## Development
 
-Interested in contributing? Start with the [CONTRIBUTING.md](CONTRIBUTING.md) guide, which includes:
-
-- Development environment setup
-- Coding standards and conventions
-- Testing procedures
-- Pull request process
+Interested in contributing? Start with the [CONTRIBUTING.md](CONTRIBUTING.md) guide.
 
 For advanced topics like architecture and adding new transcription services, see the [project wiki](https://github.com/JordanVoets/joplin-audio-transcriber/wiki).
 

@@ -2,7 +2,7 @@
 
 A Joplin plugin that transcribes audio files attached to your notes using AI-powered transcription services.
 
-<video src="src/assets/demo-video.mp4" controls autoplay loop></video>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ejgP3Y5XDc0?si=C2Y-B_cMKC2_sffY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Features
 

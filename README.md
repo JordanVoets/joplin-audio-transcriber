@@ -2,6 +2,8 @@
 
 A Joplin plugin that transcribes audio files attached to your notes using AI-powered transcription services.
 
+<video src="assets/demo-video.mp4" controls autoplay loop></video>
+
 ## Features
 
 - 🎙️ **Audio Transcription** - Transcribe attached audio files directly from your Joplin notes

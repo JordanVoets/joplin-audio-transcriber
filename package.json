@@ -10,13 +10,17 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "joplin-plugin"
   ],
   "files": [
     "publish"
   ],
+  "repository": "https://github.com/JordanVoets/joplin-audio-transcriber",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",

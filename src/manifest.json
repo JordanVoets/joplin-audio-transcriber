@@ -8,7 +8,9 @@
 	"author": "Jordan Voets",
 	"homepage_url": "https://github.com/JordanVoets/joplin-audio-transcriber",
 	"repository_url": "https://github.com/JordanVoets/joplin-audio-transcriber",
-	"platforms": ["desktop"],
+	"platforms": [
+		"desktop"
+	],
 	"keywords": [
 		"audio",
 		"transcription",

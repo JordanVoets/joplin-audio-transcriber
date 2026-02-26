@@ -1,6 +1,6 @@
 {
-  "name": "joplin-plugin-audio-transcriber",
-  "version": "1.0.0",
+  "name": "@joplin/joplin-audio-transcriber",
+  "version": "3.5.0",
   "scripts": {
     "dist": "webpack --env joplin-plugin-config=buildMain && webpack --env joplin-plugin-config=buildExtraScripts && webpack --env joplin-plugin-config=createArchive",
     "prepare": "npm run dist",
@@ -10,13 +10,17 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "joplin-plugin"
   ],
   "files": [
     "publish"
   ],
+  "repository": "https://github.com/laurent22/joplin/tree/dev/packages/joplin-audio-transcriber",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",

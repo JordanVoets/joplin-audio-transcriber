@@ -30,6 +30,11 @@ jobs:
       - name: Build plugin
         run: npm run dist
 
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         env:
